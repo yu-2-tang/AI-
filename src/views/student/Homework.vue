@@ -37,6 +37,9 @@ export default {
   },
   methods: {
     viewDetail(id) {
+      // 注意：根据当前路由配置，这个路径需要在路由中添加才能使用
+      // 目前路由中没有配置/homework/:id，所以这行会报错
+      // 你可以先注释掉或添加对应的路由配置
       this.$router.push(`/student/homework/${id}`)
     }
   }
