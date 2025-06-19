@@ -1,59 +1,65 @@
 <template>
-  <div class="course-table">
-    <div class="actions">
-      <el-button type="primary" @click="$emit('add')">
-        <i class="el-icon-plus"></i> 新增课程
-      </el-button>
-    </div>
+  <table class="course-table">
+    <thead>
+      <tr>
+        <th>课程名称</th><th>课程编号</th><th>学分</th><th>授课教师</th><th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="c in courses" :key="c.id">
+        <!-- 课程名称按钮风格 -->
+        <td>
+          <router-link
+            :to="`/teacher/courses/${c.id}`"
+            class="btn table-btn"
+          >
+            {{ c.name }}
+          </router-link>
+        </td>
 
-    <el-table :data="courses" :border="true" style="width: 100%">
-      <el-table-column prop="code" label="课程编号" width="120" />
-      <el-table-column prop="name" label="课程名称" />
-      <el-table-column prop="teacher" label="授课教师" width="120" />
-      <el-table-column prop="credit" label="学分" width="80" />
-      <el-table-column prop="hours" label="学时" width="80" />
-      <el-table-column label="操作" width="180">
-        <template #default="scope">
-          <el-button 
-            size="small" 
-            type="primary"
-            @click="$emit('edit', scope.row)"
-          >
-            编辑
-          </el-button>
-          <el-button 
-            size="small" 
-            type="danger"
-            @click="$emit('delete', scope.row.id)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-  </div>
+        <td>{{ c.code }}</td>
+        <td>{{ c.credit }}</td>
+        <td>{{ c.teacher }}</td>
+
+        <td class="op-col">
+          <button class="btn outline-btn" @click="$router.push(`/teacher/courses/${c.id}`)">查看</button>
+          <button class="btn primary-btn" @click="$emit('edit', c.id)">编辑</button>
+          <button class="btn danger-btn"  @click="$emit('delete', c.id)">删除</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </template>
 
 <script>
 export default {
   name: 'CourseTable',
-  props: {
-    courses: {
-      type: Array,
-      required: true
-    }
-  }
+  props: { courses: Array }
 }
 </script>
 
 <style scoped>
 .course-table {
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
+  width: 100%; border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
 }
+.course-table th, .course-table td {
+  border: 1px solid #eee; padding: 10px; text-align: left;
+}
+/* ———按钮样式——— */
+.btn { border: none; border-radius: 4px; padding: 4px 12px; font-size: 13px; cursor: pointer; transition: 0.25s; }
+.table-btn   { background: #4a90e2; color:#fff; }
+.table-btn:hover { opacity: 0.9; }
 
-.actions {
-  margin-bottom: 20px;
-}
+.outline-btn { background: transparent; border: 1px solid #4a90e2; color:#4a90e2; }
+.outline-btn:hover { background: rgba(74,144,226,.1); }
+
+.primary-btn { background: #4a90e2; color:#fff; }
+.primary-btn:hover { opacity: 0.9; }
+
+.danger-btn  { background: #f56c6c; color:#fff; }
+.danger-btn:hover { opacity: 0.9; }
+
+.op-col button { margin-right: 6px; }
 </style>
+

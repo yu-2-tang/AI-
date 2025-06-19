@@ -1,66 +1,36 @@
 <template>
   <div class="teacher-dashboard">
-    <!-- 导航栏 -->
-    <header class="teacher-header">
+    <!-- 顶栏 -->
+    <header class="dashboard-header">
       <div class="header-content">
+        <!-- 左侧 Logo 与标题 -->
         <div class="logo-group">
-          <img src="@/assets/logo.png" alt="AI智慧课程平台" class="logo">
-          <h1>教师工作台</h1>
+          <img src="@/assets/logo.png" alt="智慧学习平台" class="logo" />
+          <h1>教师教学中心</h1>
         </div>
-        <nav class="teacher-nav">
-          <router-link to="/teacher/students">
-            <i class="el-icon-user"></i>
-            <span>学生管理</span>
-          </router-link>
-          <router-link to="/teacher/courses">
-            <i class="el-icon-notebook-2"></i>
-            <span>课程管理</span>
-          </router-link>
-          <router-link to="/teacher/tasks">
-            <i class="el-icon-document"></i>
-            <span>任务管理</span>
-          </router-link>
-          <router-link to="/teacher/analytics">
-            <i class="el-icon-data-analysis"></i>
-            <span>学习分析</span>
-          </router-link>
-          <router-link to="/teacher/grades">
-            <i class="el-icon-data-line"></i>
-            <span>成绩管理</span>
+
+        <!-- 中部导航 -->
+        <nav class="dashboard-nav">
+          <router-link
+            v-for="route in teacherRoutes"
+            :key="route.path"
+            :to="{ name: route.name }"
+          >
+            {{ route.meta.title }}
           </router-link>
         </nav>
+
+        <!-- 右侧用户操作 -->
         <div class="user-actions">
-          <el-dropdown>
-            <span class="user-info">
-              <el-avatar :size="36" :src="userAvatar" class="avatar"></el-avatar>
-              <span class="username">{{ userName }}</span>
-              <i class="el-icon-arrow-down"></i>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="goProfile">
-                  <i class="el-icon-user"></i>个人中心
-                </el-dropdown-item>
-                <el-dropdown-item @click="logout" divided>
-                  <i class="el-icon-switch-button"></i>退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <span class="username">{{ userName }}</span>
+          <button @click="logout" class="logout-btn">退出登录</button>
         </div>
       </div>
     </header>
 
-    <!-- 主内容区 -->
-    <main class="teacher-main">
-      <div class="welcome-banner">
-        <h2>欢迎回来，{{ userName }}！</h2>
-        <p>今日有 <span class="highlight">3</span> 个待批改作业，<span class="highlight">2</span> 个课程即将开始</p>
-      </div>
-      
-      <div class="content-container">
-        <router-view></router-view>
-      </div>
+    <!-- 主内容 -->
+    <main class="dashboard-main">
+      <router-view />
     </main>
   </div>
 </template>
@@ -70,213 +40,66 @@ export default {
   name: 'TeacherDashboard',
   data() {
     return {
-      userName: '张老师',
-      userAvatar: require('@/assets/default-avatar.png')
+      userName: '王老师',
+      teacherRoutes: [
+        { name: 'StudentManagement', meta: { title: '学生管理' } },
+        { name: 'CourseManagement', meta: { title: '课程管理' } },
+        { name: 'TaskManagement',   meta: { title: '任务管理' } },
+        { name: 'GradeManagement',  meta: { title: '成绩分析' } }
+      ]
     }
   },
   methods: {
     logout() {
-      this.$confirm('确定要退出登录吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        localStorage.removeItem('token')
-        localStorage.removeItem('role')
-        this.$router.push('/login')
-        this.$message.success('已安全退出')
-      })
-    },
-    goProfile() {
-      this.$router.push('/teacher/profile')
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      this.$router.push('/login')
     }
   }
 }
 </script>
 
 <style scoped>
-.teacher-dashboard {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f7fa;
-}
+/* ——完全沿用学生端配色—— */
+.teacher-dashboard { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 导航栏样式 */
-.teacher-header {
-  background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
-  color: white;
-  padding: 0;
+.dashboard-header {
+  background: linear-gradient(135deg, #f0f8ff 0%, #c7e0ff 100%);
+  color: #2c3e50;
+  padding: 15px 0;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
 }
 
 .header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 30px;
-  height: 64px;
+  max-width: 1200px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 20px;
 }
 
-.logo-group {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.logo-group { display: flex; align-items: center; gap: 15px; }
+.logo { height: 40px; }
+.logo-group h1 { font-size: 20px; font-weight: 600; color: #2c3e50; }
+
+.dashboard-nav { display: flex; gap: 30px; }
+.dashboard-nav a {
+  color: #2c3e50; text-decoration: none; font-weight: 500;
+  padding: 5px 0; border-bottom: 2px solid transparent; transition: all 0.3s;
+}
+.dashboard-nav a:hover {
+  color: #4a90e2; border-bottom-color: rgba(74,144,226,0.7);
+}
+.dashboard-nav a.router-link-exact-active {
+  border-bottom-color: #4a90e2; font-weight: 600; color: #4a90e2;
 }
 
-.logo-group h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: white;
-  margin: 0;
+.user-actions { display: flex; align-items: center; gap: 15px; }
+.username { font-weight: 500; color: #2c3e50; }
+.logout-btn {
+  background: rgba(74,144,226,0.1); border: 1px solid #4a90e2; color: #4a90e2;
+  padding: 5px 15px; border-radius: 4px; cursor: pointer; transition: all 0.3s;
 }
+.logout-btn:hover { background: rgba(74,144,226,0.2); }
 
-.logo {
-  height: 36px;
-  filter: brightness(0) invert(1);
-}
-
-.teacher-nav {
-  display: flex;
-  gap: 10px;
-  margin-left: 40px;
-}
-
-.teacher-nav a {
-  color: rgba(255,255,255,0.8);
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0 15px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
-  border-bottom: 3px solid transparent;
-}
-
-.teacher-nav a:hover {
-  color: white;
-  background: rgba(255,255,255,0.1);
-}
-
-.teacher-nav a.router-link-exact-active {
-  color: white;
-  background: rgba(255,255,255,0.15);
-  border-bottom-color: white;
-  font-weight: 600;
-}
-
-.teacher-nav i {
-  font-size: 18px;
-}
-
-.user-actions {
-  margin-left: auto;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: background 0.3s;
-}
-
-.user-info:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.avatar {
-  background-color: #f56a00;
-}
-
-.username {
-  font-weight: 500;
-}
-
-/* 主内容区 */
-.teacher-main {
-  flex: 1;
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.welcome-banner {
-  background: white;
-  border-radius: 8px;
-  padding: 20px 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.welcome-banner h2 {
-  color: #3a7bd5;
-  margin: 0 0 10px 0;
-  font-size: 24px;
-}
-
-.welcome-banner p {
-  color: #666;
-  margin: 0;
-  font-size: 15px;
-}
-
-.highlight {
-  color: #f56c6c;
-  font-weight: 600;
-}
-
-.content-container {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-/* 响应式设计 */
-@media (max-width: 992px) {
-  .header-content {
-    padding: 0 15px;
-  }
-  
-  .teacher-nav {
-    gap: 5px;
-    margin-left: 20px;
-  }
-  
-  .teacher-nav a {
-    padding: 0 10px;
-    font-size: 14px;
-  }
-  
-  .teacher-nav i {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .teacher-nav span {
-    display: none;
-  }
-  
-  .teacher-nav a {
-    padding: 0 12px;
-  }
-  
-  .teacher-nav i {
-    display: block;
-    font-size: 20px;
-  }
-}
+.dashboard-main { flex: 1; background: #fff; padding: 30px;
+  max-width: 1200px; margin: 0 auto; width: 100%; }
 </style>

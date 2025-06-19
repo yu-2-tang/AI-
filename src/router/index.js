@@ -1,12 +1,13 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
 const routes = [
+  /* ---------- 公共页面 ---------- */
   {
     path: '/',
     name: 'home',
-    component: HomeView,
-    meta: { requiresAuth: true }
+    component: HomeView
   },
   {
     path: '/login',
@@ -18,39 +19,29 @@ const routes = [
     name: 'register',
     component: () => import('../views/RegisterView.vue')
   },
-  // 教师端路由
+
+  /* ---------- 教师端 ---------- */
   {
     path: '/teacher',
     component: () => import('../views/teacher/TeacherDashboard.vue'),
-    meta: { requiresAuth: true, role: 'teacher' },
-    redirect: '/teacher/students', // 添加默认重定向
+    redirect: '/teacher/students',
     children: [
-      // 学生管理
       {
         path: 'students',
         name: 'StudentManagement',
-        component: () => import('../views/teacher/StudentManagement.vue') // 使用合并后的组件
+        component: () => import('../views/teacher/StudentManagement.vue')
       },
-      {
-        path: 'students/import-export',
-        name: 'StudentImportExport',
-        component: () => import('../views/teacher/StudentImportExport.vue')
-      },
-      
-      // 课程管理
       {
         path: 'courses',
         name: 'CourseManagement',
-        component: () => import('../views/teacher/CourseManagement.vue') // 修正路径
+        component: () => import('../views/teacher/CourseManagement.vue')
       },
       {
         path: 'courses/:id',
         name: 'CourseDetail',
         component: () => import('../views/shared/CourseDetail.vue'),
-        props: true // 添加props传参
+        props: true
       },
-      
-      // 任务管理
       {
         path: 'tasks',
         name: 'TaskManagement',
@@ -62,21 +53,19 @@ const routes = [
         component: () => import('../views/shared/TaskDetail.vue'),
         props: true
       },
-      
-      // 学习分析
       {
-        path: 'analytics',
-        name: 'LearningAnalytics',
-        component: () => import('../views/teacher/LearningAnalytics.vue')
+        path: 'grades',
+        name: 'GradeManagement',
+        component: () => import('../views/teacher/GradeManagement.vue')
       }
     ]
   },
-  // 学生端路由
+
+  /* ---------- 学生端 ---------- */
   {
     path: '/student',
     component: () => import('../views/student/StudentDashboard.vue'),
-    meta: { requiresAuth: true, role: 'student' },
-    redirect: '/student/courses', // 添加默认重定向
+    redirect: '/student/courses',
     children: [
       {
         path: 'courses',
@@ -117,6 +106,13 @@ const routes = [
         component: () => import('../views/student/PerformanceDashboard.vue')
       }
     ]
+  },
+
+  /* ---------- 404 ---------- */
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue')
   }
 ]
 
@@ -125,4 +121,4 @@ const router = createRouter({
   routes
 })
 
-export default router // 修正导出语句
+export default router

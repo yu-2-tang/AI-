@@ -1,57 +1,38 @@
 <template>
-  <div class="task-management">
-    <div class="header">
-      <h2>任务管理</h2>
-      <button @click="showCreateModal = true" class="btn-primary">创建新任务</button>
-    </div>
-    
-    <div class="task-list">
-      <div v-for="task in tasks" :key="task.id" class="task-card">
-        <h3>{{ task.title }}</h3>
-        <p>课程: {{ task.course }}</p>
-        <p>截止时间: {{ task.deadline }}</p>
-        <p>任务类型: {{ task.type }}</p>
-        <div class="actions">
-          <button @click="editTask(task)" class="btn-edit">编辑</button>
-          <button @click="deleteTask(task.id)" class="btn-delete">删除</button>
-        </div>
-      </div>
+  <div class="task-mgmt">
+    <h2>任务管理</h2>
+
+    <div class="action-bar">
+      <button class="btn primary-btn" @click="addTask">发布任务</button>
     </div>
 
-    <!-- 创建任务模态框 -->
-    <div v-if="showCreateModal" class="modal">
-      <div class="modal-content">
-        <h3>创建新任务</h3>
-        <form @submit.prevent="createTask">
-          <div class="form-group">
-            <label>任务标题</label>
-            <input v-model="newTask.title" required>
-          </div>
-          <div class="form-group">
-            <label>任务类型</label>
-            <select v-model="newTask.type" required>
-              <option value="homework">章节作业</option>
-              <option value="quiz">测试答题</option>
-              <option value="video">视频观看</option>
-              <option value="reading">资料阅读</option>
-              <option value="project">实践项目</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>截止时间</label>
-            <input type="datetime-local" v-model="newTask.deadline" required>
-          </div>
-          <div class="form-group">
-            <label>任务描述</label>
-            <textarea v-model="newTask.description"></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" @click="showCreateModal = false">取消</button>
-            <button type="submit">创建</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th>任务名称</th><th>类型</th><th>截止时间</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="task in tasks" :key="task.id">
+          <td>
+            <!-- 名称按钮 -->
+            <router-link
+              :to="`/teacher/tasks/${task.id}`"
+              class="btn table-btn"
+            >
+              {{ task.title }}
+            </router-link>
+          </td>
+          <td>{{ task.type }}</td>
+          <td>{{ task.deadline }}</td>
+          <td>
+            <button class="btn outline-btn" @click="$router.push(`/teacher/tasks/${task.id}`)">查看</button>
+            <button class="btn primary-btn" @click="editTask(task.id)">编辑</button>
+            <button class="btn danger-btn"  @click="deleteTask(task.id)">删除</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -61,153 +42,42 @@ export default {
   data() {
     return {
       tasks: [
-        { id: 1, title: '第一章作业', course: '人工智能基础', type: 'homework', deadline: '2023-12-15' },
-        { id: 2, title: '期中测试', course: '机器学习', type: 'quiz', deadline: '2023-11-20' }
-      ],
-      showCreateModal: false,
-      newTask: {
-        title: '',
-        type: '',
-        deadline: '',
-        description: ''
-      }
+        { id: 1, title: '第一章作业', type: '章节作业', deadline: '2025-06-30' },
+        { id: 2, title: '期中测试',   type: '试卷答题', deadline: '2025-07-15' }
+      ]
     }
   },
   methods: {
-    createTask() {
-      const newId = this.tasks.length > 0 ? Math.max(...this.tasks.map(t => t.id)) + 1 : 1
-      this.tasks.push({
-        id: newId,
-        ...this.newTask
-      })
-      this.showCreateModal = false
-      this.resetNewTask()
-    },
-    editTask(task) {
-      // 实现编辑逻辑
-      console.log('编辑任务:', task)
-    },
+    addTask() { console.log('发布新任务') },
+    editTask(id) { console.log('编辑任务', id) },
     deleteTask(id) {
-      this.tasks = this.tasks.filter(task => task.id !== id)
-    },
-    resetNewTask() {
-      this.newTask = {
-        title: '',
-        type: '',
-        deadline: '',
-        description: ''
-      }
+      this.tasks = this.tasks.filter(t => t.id !== id)
     }
   }
 }
 </script>
 
 <style scoped>
-.task-management {
-  padding: 20px;
-}
+.task-mgmt { padding: 20px; }
+.action-bar { margin-bottom: 15px; }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+/* ——表格—— */
+.task-table { width:100%; border-collapse: collapse; box-shadow: 0 2px 8px rgba(0,0,0,.05);}
+.task-table th, .task-table td { border:1px solid #eee; padding:10px; text-align:left; }
 
-.task-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
+/* ——按钮—— */
+.btn { border:none; border-radius:4px; padding:4px 12px; font-size:13px; cursor:pointer; transition:.25s; }
+.table-btn   { background:#4a90e2; color:#fff; }
+.table-btn:hover { opacity:.9; }
 
-.task-card {
-  background: white;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+.outline-btn { background:transparent; border:1px solid #4a90e2; color:#4a90e2; }
+.outline-btn:hover { background:rgba(74,144,226,.1); }
 
-.task-card h3 {
-  margin-top: 0;
-  color: #3a7bd5;
-}
+.primary-btn { background:#4a90e2; color:#fff; }
+.primary-btn:hover { opacity:.9; }
 
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
+.danger-btn  { background:#f56c6c; color:#fff; }
+.danger-btn:hover { opacity:.9; }
 
-.btn-primary {
-  background: #3a7bd5;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-edit {
-   background: #3a7bd5;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-delete {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 500px;
-  max-width: 90%;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
+.task-table td button { margin-right:6px; }
 </style>
