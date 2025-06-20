@@ -129,6 +129,9 @@
 </template>
 
 <script>
+// 添加导入语句
+import api from '@/axios';
+
 export default {
   name: 'RegisterView',
   data() {
@@ -165,39 +168,97 @@ export default {
         this.registerTeacher()
       }
     },
-    registerStudent() {
+    async registerStudent() {
       // 验证逻辑
       if (this.studentForm.password !== this.studentForm.confirmPassword) {
-        alert('两次输入的密码不一致！')
-        return
+        this.errorMessage = '两次输入的密码不一致！';
+        return;
       }
       
       if (!this.studentForm.agreeTerms) {
-        alert('请同意服务条款和隐私政策')
-        return
+        this.errorMessage = '请同意服务条款和隐私政策';
+        return;
       }
 
-      // 提交注册逻辑
-      console.log('学生注册信息:', this.studentForm)
-      alert('学生注册成功！')
-      this.$router.push('/login')
+      this.loading = true;
+      this.errorMessage = '';
+
+      try {
+        const payload = {
+          username: this.studentForm.username,
+          password: this.studentForm.password,
+          email: this.studentForm.email,
+          phone: this.studentForm.phone,
+          realName: this.studentForm.realName,
+          role: 'STUDENT',
+          studentNumber: this.studentForm.studentNumber,
+          grade: this.studentForm.grade,
+          major: this.studentForm.major
+        };
+
+        const response = await api.post('/auth/register', payload);
+        
+        // 保存token和用户信息
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('userRole', response.role);
+        
+        // 跳转到学生仪表盘
+        this.$router.push('/student');
+        
+      } catch (error) {
+        console.error('学生注册失败:', error);
+        this.errorMessage = error.response?.data?.error || '注册失败，请稍后再试';
+      } finally {
+        this.loading = false;
+      }
     },
-    registerTeacher() {
+    async registerTeacher() {
       // 验证逻辑
       if (this.teacherForm.password !== this.teacherForm.confirmPassword) {
-        alert('两次输入的密码不一致！')
-        return
+        this.errorMessage = '两次输入的密码不一致！';
+        return;
       }
       
       if (!this.teacherForm.agreeTerms) {
-        alert('请同意服务条款和隐私政策')
-        return
+        this.errorMessage = '请同意服务条款和隐私政策';
+        return;
       }
 
-      // 提交注册逻辑
-      console.log('教师注册信息:', this.teacherForm)
-      alert('教师注册成功！')
-      this.$router.push('/login')
+      this.loading = true;
+      this.errorMessage = '';
+
+      try {
+        const payload = {
+          username: this.teacherForm.username,
+          password: this.teacherForm.password,
+          email: this.teacherForm.email,
+          phone: this.teacherForm.phone,
+          realName: this.teacherForm.realName,
+          role: 'TEACHER',
+          title: this.teacherForm.title,
+          department: this.teacherForm.department,
+          bio: this.teacherForm.bio || ''
+        };
+
+        const response = await api.post('/auth/register', payload);
+        
+        // 保存token和用户信息
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('userRole', response.role);
+        
+        // 跳转到教师仪表盘
+        this.$router.push('/teacher');
+        
+      } catch (error) {
+        console.error('教师注册失败:', error);
+        this.errorMessage = error.response?.data?.error || '注册失败，请稍后再试';
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }
