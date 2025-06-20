@@ -20,12 +20,8 @@
           required
         >
       </div>
-      <div class="remember-forgot">
-        <label class="remember-me">
-          <input type="checkbox" v-model="loginForm.rememberMe">
-          记住我
-        </label>
-        <router-link to="/forgot-password" class="forgot-password">忘记密码？</router-link>
+      <div class="forgot-password">
+        <router-link to="/forgot-password">忘记密码？</router-link>
       </div>
       <button type="submit" class="login-btn">登录</button>
     </form>
@@ -36,6 +32,9 @@
 </template>
 
 <script>
+// 添加导入语句
+import api from '@/axios';
+
 export default {
   name: 'LoginView',
   data() {
@@ -48,12 +47,37 @@ export default {
     }
   },
   methods: {
-    handleLogin() {
-      // 这里添加实际登录逻辑
-      console.log('登录信息:', this.loginForm)
+    async handleLogin() {
+      this.loading = true;
+      this.errorMessage = '';
       
-      // 模拟登录成功后跳转到首页
-      this.$router.push('/')
+      try {
+        const response = await api.post('/auth/login', {
+          username: this.loginForm.username,
+          password: this.loginForm.password
+        });
+        
+        // 保存token和用户信息
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('userRole', response.role);
+        
+        // 根据角色跳转到不同页面
+        if (response.role === 'TEACHER') {
+          this.$router.push('/teacher');
+        } else if (response.role === 'STUDENT'){
+          this.$router.push('/student');
+        }else{
+          this.$router.push('/admin');
+        }
+        
+      } catch (error) {
+        console.error('登录失败:', error);
+        this.errorMessage = error.response?.data?.error || '用户名或密码错误';
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }

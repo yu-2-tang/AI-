@@ -7,12 +7,14 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: HomeView,
+    meta: { requiresAuth: false }
   },
   {
     path: '/login',
     name: 'login',
-    component: () => import('../views/LoginView.vue')
+    component: () => import('../views/LoginView.vue'),
+    meta: { guestOnly: true }
   },
   {
     path: '/register',
@@ -120,5 +122,29 @@ const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
 })
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    // 需要登录但未登录，重定向到登录页
+    next('/login');
+  } else if (to.meta.guestOnly && isAuthenticated) {
+    // 已登录但访问仅限访客登录界面（比如登录页），重定向到首页
+    // 根据角色跳转不同首页
+    if (userRole === 'ADMIN') {
+      next('/admin');  // 管理员仪表盘
+    } else if (userRole === 'TEACHER') {
+      next('/teacher');
+    } else {
+      next('/student');
+    }
+  } else {
+    // 正常放行跳转
+    next();
+  }
+});
+
 
 export default router

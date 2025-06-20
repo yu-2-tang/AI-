@@ -44,11 +44,25 @@ export default {
     }
   },
   methods: {
-    logout() {
-      localStorage.removeItem('token')
-      localStorage.removeItem('role')
-      this.$router.push('/login')
+    async logout() {
+    try {
+      // 调用后端登出接口
+      await this.$api.post('/auth/logout', null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+    } catch (error) {
+      console.error('登出失败:', error);
+      // 即使API失败也继续执行本地清理
+    } finally {
+      // 清理本地存储
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      // 跳转到登录页
+      this.$router.push('/login');
     }
+  }
   }
 }
 </script>

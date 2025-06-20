@@ -26,6 +26,11 @@
       </div>
 
       <div class="form-group">
+        <label>真实姓名<span class="required">*</span></label>
+        <input v-model="studentForm.realName" type="text" placeholder="请输入真实姓名" required>
+      </div>
+
+      <div class="form-group">
         <label>邮箱<span class="required">*</span></label>
         <input v-model="studentForm.email" type="email" placeholder="请输入邮箱" required>
       </div>
@@ -45,7 +50,7 @@
 
       <div class="form-group">
         <label>学号<span class="required">*</span></label>
-        <input v-model="studentForm.studentId" type="text" placeholder="请输入学号" required>
+        <input v-model="studentForm.studentNumber" type="text" placeholder="请输入学号" required>
       </div>
 
       <div class="form-group">
@@ -79,6 +84,11 @@
       </div>
 
       <div class="form-group">
+        <label>真实姓名<span class="required">*</span></label>
+        <input v-model="teacherForm.realName" type="text" placeholder="请输入真实姓名" required>
+      </div>
+
+      <div class="form-group">
         <label>邮箱<span class="required">*</span></label>
         <input v-model="teacherForm.email" type="email" placeholder="请输入邮箱" required>
       </div>
@@ -97,6 +107,11 @@
           <option value="讲师">讲师</option>
           <option value="助教">助教</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label>工号<span class="required">*</span></label>
+        <input v-model="teacherForm.employeeNumber" type="text" placeholder="请输入工号" required>
       </div>
 
       <div class="form-group">
@@ -129,6 +144,7 @@
 </template>
 
 <script>
+import api from '@/axios';
 export default {
   name: 'RegisterView',
   data() {
@@ -136,10 +152,11 @@ export default {
       userType: 'student', // 默认显示学生注册
       studentForm: {
         username: '',
+        realName: '', // 新增真实姓名字段
         email: '',
         phone: '',
         grade: '',
-        studentId: '',
+        studentNumber: '', // 学号
         major: '',
         password: '',
         confirmPassword: '',
@@ -147,14 +164,18 @@ export default {
       },
       teacherForm: {
         username: '',
+        realName: '', // 新增真实姓名字段
         email: '',
         phone: '',
         title: '',
+        employeeNumber: '', // 新增工号字段
         department: '',
         password: '',
         confirmPassword: '',
         agreeTerms: false
-      }
+      },
+      loading: false,
+      errorMessage: ''
     }
   },
   methods: {
@@ -165,39 +186,98 @@ export default {
         this.registerTeacher()
       }
     },
-    registerStudent() {
+    async registerStudent() {
       // 验证逻辑
       if (this.studentForm.password !== this.studentForm.confirmPassword) {
-        alert('两次输入的密码不一致！')
-        return
+        this.errorMessage = '两次输入的密码不一致！';
+        return;
       }
       
       if (!this.studentForm.agreeTerms) {
-        alert('请同意服务条款和隐私政策')
-        return
+        this.errorMessage = '请同意服务条款和隐私政策';
+        return;
       }
 
-      // 提交注册逻辑
-      console.log('学生注册信息:', this.studentForm)
-      alert('学生注册成功！')
-      this.$router.push('/login')
+      this.loading = true;
+      this.errorMessage = '';
+
+      try {
+        const payload = {
+          username: this.studentForm.username,
+          password: this.studentForm.password,
+          email: this.studentForm.email,
+          phone: this.studentForm.phone,
+          realName: this.studentForm.realName, // 新增真实姓名
+          role: 'STUDENT',
+          studentNumber: this.studentForm.studentNumber, // 学号
+          grade: this.studentForm.grade,
+          major: this.studentForm.major
+        };
+
+        const response = await api.post('/auth/register', payload);
+        
+        // 保存token和用户信息
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('userRole', response.role);
+        
+        // 跳转到学生仪表盘
+        this.$router.push('/student');
+        
+      } catch (error) {
+        console.error('学生注册失败:', error);
+        this.errorMessage = error.response?.data?.error || '注册失败，请稍后再试';
+      } finally {
+        this.loading = false;
+      }
     },
-    registerTeacher() {
+    async registerTeacher() {
       // 验证逻辑
       if (this.teacherForm.password !== this.teacherForm.confirmPassword) {
-        alert('两次输入的密码不一致！')
-        return
+        this.errorMessage = '两次输入的密码不一致！';
+        return;
       }
       
       if (!this.teacherForm.agreeTerms) {
-        alert('请同意服务条款和隐私政策')
-        return
+        this.errorMessage = '请同意服务条款和隐私政策';
+        return;
       }
 
-      // 提交注册逻辑
-      console.log('教师注册信息:', this.teacherForm)
-      alert('教师注册成功！')
-      this.$router.push('/login')
+      this.loading = true;
+      this.errorMessage = '';
+
+      try {
+        const payload = {
+          username: this.teacherForm.username,
+          password: this.teacherForm.password,
+          email: this.teacherForm.email,
+          phone: this.teacherForm.phone,
+          realName: this.teacherForm.realName, // 新增真实姓名
+          role: 'TEACHER',
+          employeeNumber: this.teacherForm.employeeNumber, // 新增工号
+          title: this.teacherForm.title,
+          department: this.teacherForm.department,
+          bio: this.teacherForm.bio || ''
+        };
+
+        const response = await api.post('/auth/register', payload);
+        
+        // 保存token和用户信息
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('userRole', response.role);
+        
+        // 跳转到教师仪表盘
+        this.$router.push('/teacher');
+        
+      } catch (error) {
+        console.error('教师注册失败:', error);
+        this.errorMessage = error.response?.data?.error || '注册失败，请稍后再试';
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }
