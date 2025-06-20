@@ -26,6 +26,11 @@
       </div>
 
       <div class="form-group">
+        <label>真实姓名<span class="required">*</span></label>
+        <input v-model="studentForm.realName" type="text" placeholder="请输入真实姓名" required>
+      </div>
+
+      <div class="form-group">
         <label>邮箱<span class="required">*</span></label>
         <input v-model="studentForm.email" type="email" placeholder="请输入邮箱" required>
       </div>
@@ -45,7 +50,7 @@
 
       <div class="form-group">
         <label>学号<span class="required">*</span></label>
-        <input v-model="studentForm.studentId" type="text" placeholder="请输入学号" required>
+        <input v-model="studentForm.studentNumber" type="text" placeholder="请输入学号" required>
       </div>
 
       <div class="form-group">
@@ -79,6 +84,11 @@
       </div>
 
       <div class="form-group">
+        <label>真实姓名<span class="required">*</span></label>
+        <input v-model="teacherForm.realName" type="text" placeholder="请输入真实姓名" required>
+      </div>
+
+      <div class="form-group">
         <label>邮箱<span class="required">*</span></label>
         <input v-model="teacherForm.email" type="email" placeholder="请输入邮箱" required>
       </div>
@@ -97,6 +107,11 @@
           <option value="讲师">讲师</option>
           <option value="助教">助教</option>
         </select>
+      </div>
+
+      <div class="form-group">
+        <label>工号<span class="required">*</span></label>
+        <input v-model="teacherForm.employeeNumber" type="text" placeholder="请输入工号" required>
       </div>
 
       <div class="form-group">
@@ -129,9 +144,7 @@
 </template>
 
 <script>
-// 添加导入语句
 import api from '@/axios';
-
 export default {
   name: 'RegisterView',
   data() {
@@ -139,10 +152,11 @@ export default {
       userType: 'student', // 默认显示学生注册
       studentForm: {
         username: '',
+        realName: '', // 新增真实姓名字段
         email: '',
         phone: '',
         grade: '',
-        studentId: '',
+        studentNumber: '', // 学号
         major: '',
         password: '',
         confirmPassword: '',
@@ -150,14 +164,18 @@ export default {
       },
       teacherForm: {
         username: '',
+        realName: '', // 新增真实姓名字段
         email: '',
         phone: '',
         title: '',
+        employeeNumber: '', // 新增工号字段
         department: '',
         password: '',
         confirmPassword: '',
         agreeTerms: false
-      }
+      },
+      loading: false,
+      errorMessage: ''
     }
   },
   methods: {
@@ -189,9 +207,9 @@ export default {
           password: this.studentForm.password,
           email: this.studentForm.email,
           phone: this.studentForm.phone,
-          realName: this.studentForm.realName,
+          realName: this.studentForm.realName, // 新增真实姓名
           role: 'STUDENT',
-          studentNumber: this.studentForm.studentNumber,
+          studentNumber: this.studentForm.studentNumber, // 学号
           grade: this.studentForm.grade,
           major: this.studentForm.major
         };
@@ -235,8 +253,9 @@ export default {
           password: this.teacherForm.password,
           email: this.teacherForm.email,
           phone: this.teacherForm.phone,
-          realName: this.teacherForm.realName,
+          realName: this.teacherForm.realName, // 新增真实姓名
           role: 'TEACHER',
+          employeeNumber: this.teacherForm.employeeNumber, // 新增工号
           title: this.teacherForm.title,
           department: this.teacherForm.department,
           bio: this.teacherForm.bio || ''
