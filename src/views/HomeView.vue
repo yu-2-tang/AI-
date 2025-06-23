@@ -11,7 +11,7 @@
               <h2>AI赋能教育，知识图谱引领学习革命</h2>
               <p class="subtitle">智能化生产 · 结构化管理 · 个性化学习</p>
               <div class="cta-buttons">
-                <button class="btn primary-btn" @click="navigateToRegister">立即体验</button>
+                <button class="btn primary-btn" @click="navigateToLogin">立即体验</button>
                 <button class="btn secondary-btn" @click="showDemo">观看演示</button>
               </div>
             </div>
@@ -94,8 +94,8 @@ export default {
     AppFooter
   },
   methods: {
-    navigateToRegister() {
-      this.$router.push('/register');
+    navigateToLogin() {
+      this.$router.push('/login');
     },
     showDemo() {
       alert('即将播放平台演示视频');

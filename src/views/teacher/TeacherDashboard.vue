@@ -45,33 +45,30 @@ export default {
         { name: 'StudentManagement', meta: { title: '学生管理' } },
         { name: 'CourseManagement', meta: { title: '课程管理' } },
         { name: 'TaskManagement',   meta: { title: '任务管理' } },
-        { name: 'GradeManagement',  meta: { title: '成绩分析' } }
+        { name: 'GradeManagement',  meta: { title: '成绩分析' } },
       ]
     }
   },
   methods: {
     async logout() {
-    try {
-      // 调用后端登出接口
-      await this.$api.post('/auth/logout', null, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-    } catch (error) {
-      console.error('登出失败:', error);
-      // 即使API失败也继续执行本地清理
-    } finally {
-      // 清理本地存储
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      // 跳转到登录页
-      this.$router.push('/login');
+      try {
+        await this.$api.post('/auth/logout', null, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+      } catch (error) {
+        console.error('登出失败:', error);
+      } finally {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        this.$router.push('/login');
+      }
     }
-  }
   }
 }
 </script>
+
 
 <style scoped>
 /* ——完全沿用学生端配色—— */

@@ -59,7 +59,13 @@ const routes = [
         path: 'grades',
         name: 'GradeManagement',
         component: () => import('../views/teacher/GradeManagement.vue')
-      }
+      },
+      {
+      path: 'resources/:courseId',
+      name: 'ResourceManagement',
+      component: () => import('../views/teacher/ResourceManagement.vue'),
+      props: true
+    }
     ]
   },
 

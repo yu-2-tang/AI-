@@ -10,7 +10,7 @@
         <!-- 课程名称按钮风格 -->
         <td>
           <router-link
-            :to="`/teacher/courses/${c.id}`"
+            :to="`/teacher/courses/${c.courseId}`"
             class="btn table-btn"
           >
             {{ c.name }}
@@ -22,9 +22,9 @@
         <td>{{ c.teacher }}</td>
 
         <td class="op-col">
-          <button class="btn outline-btn" @click="$router.push(`/teacher/courses/${c.id}`)">查看</button>
-          <button class="btn primary-btn" @click="$emit('edit', c.id)">编辑</button>
-          <button class="btn danger-btn"  @click="$emit('delete', c.id)">删除</button>
+          <button class="btn outline-btn" @click="$router.push(`/teacher/courses/${c.courseId}`)">查看</button>
+          <button class="btn primary-btn" @click="$emit('edit', c)">编辑</button>
+          <button class="btn danger-btn"  @click="$emit('delete', c.courseId)">删除</button>
         </td>
       </tr>
     </tbody>

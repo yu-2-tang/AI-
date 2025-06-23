@@ -8,6 +8,15 @@
     <p>学期: {{ course.semester }}</p>
     <p>描述: {{ course.description }}</p>
 
+    <!-- 跳转资源管理按钮 -->
+    <router-link
+      :to="{ name: 'ResourceManagement', params: { courseId: courseId } }"
+      class="btn primary-btn"
+      style="display:inline-block; margin: 15px 0;"
+    >
+      进入资源管理页面
+    </router-link>
+
     <hr />
 
     <!-- 上传资源 -->
@@ -36,7 +45,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from '@/axios'
 
 export default {
   name: 'CourseDetail',
@@ -143,5 +152,21 @@ export default {
   padding: 6px 0;
   border-bottom: 1px dashed #ccc;
 }
-</style>
 
+/* 按钮样式 */
+.btn {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+.primary-btn {
+  background: #4a90e2;
+  color: #fff;
+}
+.primary-btn:hover {
+  opacity: 0.9;
+}
+</style>
