@@ -1,14 +1,14 @@
 <template>
-  <div class="student-courses">
-    <h2>我已选的课程</h2>
+  <div class="all-courses">
+    <h2>全部课程列表</h2>
     <div class="course-list">
       <div class="course-card" v-for="course in courses" :key="course.id">
         <h3>{{ course.name }}</h3>
         <p>教师: {{ course.teacher }}</p>
         <p>学期: {{ course.semester }}</p>
-        <p>时间: {{ course.time || '待定' }}</p>
-        <p>地点: {{ course.location || '待定' }}</p>
-        <button class="btn danger-btn" @click="dropCourse(course.id)">退课</button>
+        <p>学分: {{ course.credit }}</p>
+        <p>学时: {{ course.hours }}</p>
+        <button class="btn primary-btn" @click="selectCourse(course.id)">选课</button>
       </div>
     </div>
   </div>
@@ -18,7 +18,7 @@
 import axios from '@/axios'
 
 export default {
-  name: 'Courses',
+  name: 'AllCourses',
   data() {
     return {
       courses: []
@@ -27,22 +27,21 @@ export default {
   methods: {
     async fetchCourses() {
       try {
-        const res = await axios.get('/api/course/list-my')
+        const res = await axios.get('/api/course/list-all')
         this.courses = res.data.data || []
       } catch (err) {
-        console.error('获取课程失败', err)
-        alert('加载我的课程失败')
+        console.error('加载课程失败', err)
+        alert('加载课程失败')
       }
     },
-    async dropCourse(courseId) {
-      if (!confirm('确认要退选这门课程吗？')) return
+    async selectCourse(courseId) {
       try {
-        await axios.delete(`/api/course/drop/${courseId}`)
-        alert('退课成功')
+        await axios.post(`/api/course/select/${courseId}`)
+        alert('选课成功')
         this.fetchCourses()
       } catch (err) {
-        console.error('退课失败', err)
-        alert('退课失败')
+        console.error('选课失败', err)
+        alert(err.response?.data?.msg || '选课失败')
       }
     }
   },
@@ -53,7 +52,7 @@ export default {
 </script>
 
 <style scoped>
-.student-courses {
+.all-courses {
   padding: 20px;
 }
 .course-list {
@@ -75,11 +74,11 @@ export default {
   border-radius: 4px;
   cursor: pointer;
 }
-.danger-btn {
-  background: #e74c3c;
+.primary-btn {
+  background: #4a90e2;
   color: white;
 }
-.danger-btn:hover {
+.primary-btn:hover {
   opacity: 0.9;
 }
 </style>

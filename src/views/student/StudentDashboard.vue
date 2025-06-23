@@ -39,7 +39,8 @@ export default {
       studentRoutes: [
         { name: 'StudentCourses', meta: { title: '课程管理' } },
         { name: 'StudentHomework', meta: { title: '作业管理' } },
-        { name: 'StudentGrades', meta: { title: '成绩查看' } }
+        { name: 'StudentGrades', meta: { title: '成绩查看' } },
+        { name: 'StudentResources', meta: { title: '我的资源' } }
       ]
     }
   },

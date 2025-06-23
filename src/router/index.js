@@ -21,6 +21,28 @@ const routes = [
     name: 'register',
     component: () => import('../views/RegisterView.vue')
   },
+  /* ---------- 管理员端 ---------- */
+  {
+  path: '/admin',
+  component: () => import('@/views/admin/AdminDashboard.vue'),
+  redirect: '/admin/students',
+  meta: { requiresAuth: true, roles: ['ADMIN'] },
+  children: [
+    {
+      path: 'students',
+      name: 'AdminStudentManagement',
+      component: () => import('@/views/admin/AdminStudentManagement.vue'),
+      meta: { title: '学生管理' }
+    },
+    {
+      path: 'teachers',
+      name: 'AdminTeacherManagement',
+      component: () => import('@/views/admin/AdminTeacherManagement.vue'),
+      meta: { title: '教师管理' }
+    }
+    // 可以继续扩展更多管理员子模块，比如课程管理、审核功能等
+  ]
+  },
 
   /* ---------- 教师端 ---------- */
   {
@@ -112,6 +134,17 @@ const routes = [
         path: 'performance',
         name: 'PerformanceDashboard',
         component: () => import('../views/student/PerformanceDashboard.vue')
+      },
+      {
+        path: '/student/all-courses',
+        name: 'AllCourses',
+        component: () => import('../views/student/AllCourses.vue')
+      },
+      {
+        path: '/student/resources',
+        name: 'StudentResources',
+        component: () => import('../views/student/StudentResources.vue'),
+        meta: { requiresAuth: true, roles: ['STUDENT'], title: '我的资源' }
       }
     ]
   },
