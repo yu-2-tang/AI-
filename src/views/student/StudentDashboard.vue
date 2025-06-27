@@ -35,7 +35,7 @@ export default {
   name: 'StudentDashboard',
   data() {
     return {
-      userName: '李同学',
+      userName: `${localStorage.getItem('username')} `,
       studentRoutes: [
         { name: 'StudentCourses', meta: { title: '课程管理' } },
         { name: 'StudentHomework', meta: { title: '作业管理' } },

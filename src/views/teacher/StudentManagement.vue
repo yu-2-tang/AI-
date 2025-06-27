@@ -10,52 +10,115 @@
       <button class="primary-btn" @click="addStudent">新增学生</button>
     </div>
 
-    <!-- 学生表格组件 -->
-    <StudentTable :students="students" @delete="deleteStudent" />
+    <!-- 学生表格 -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>姓名</th>
+          <th>专业</th>
+          <th>年级</th>
+          <th>邮箱</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="student in students" :key="student.id">
+          <td>{{ student.realName }}</td>
+          <td>{{ student.major }}</td>
+          <td>{{ student.grade }}</td>
+          <td>{{ student.email }}</td>
+          <td>
+            <button @click="deleteStudent(student.studentId)">删除</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script>
-import StudentTable from '../shared/StudentTable.vue'
+import axios from '@/axios';
 
 export default {
   name: 'StudentManagement',
-  components: { StudentTable },
   data() {
     return {
-      students: [
-        { id: 1, name: '张三', major: '计算机科学', year: '大二', email: 'zhangsan@example.com' },
-        { id: 2, name: '李四', major: '软件工程', year: '大三', email: 'lisi@example.com' }
-      ]
-    }
+      students: [], // 存放课程学生数据
+      courseId: this.$route.params.courseId,
+    };
+  },
+  mounted() {
+    this.fetchStudents();  // 加载学生列表
   },
   methods: {
-    importStudents(e) {
-      /* TODO: 解析文件并更新 students */
-      console.log('导入文件: ', e.target.files[0])
+    // 获取学生信息
+    async fetchStudents() {
+      try {
+        const response = await axios.get(`/api/teacher/courses/${this.courseId}/students`);
+        this.students = response.data; // 处理返回的学生数据
+      } catch (err) {
+        console.error('获取学生信息失败', err);
+        alert('获取学生信息失败');
+      }
     },
+
+    // 批量导入学生
+    async importStudents() {
+      const fileInput = this.$refs.fileInput;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        await axios.post(`/api/teacher/courses/${this.courseId}/import-students`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        alert('学生导入成功');
+        this.fetchStudents(); // 重新加载学生列表
+      } catch (err) {
+        console.error('导入学生失败', err);
+        alert('导入学生失败');
+      }
+    },
+
+    // 导出学生
     exportStudents() {
-      /* TODO: 导出 CSV / Excel */
-      console.log('导出学生列表')
+      console.log('导出学生列表');
+      // 你可以根据后端的API实现学生的导出功能
     },
+
+    // 新增学生
     addStudent() {
-      /* TODO: 弹窗或表单新增学生 */
-      console.log('新增学生')
+      console.log('新增学生');
+      // 跳转到新增学生页面
     },
-    deleteStudent(id) {
-      this.students = this.students.filter(s => s.id !== id)
+
+    // 删除学生
+    async deleteStudent(studentId) {
+      try {
+        await axios.delete(`/api/teacher/courses/${this.courseId}/students/${studentId}`);
+        alert('学生删除成功');
+        this.fetchStudents();  // 重新加载学生列表
+      } catch (err) {
+        console.error('删除学生失败', err);
+        alert('删除学生失败');
+      }
     }
   }
-}
+};
 </script>
 
 <style scoped>
 .student-mgmt { padding: 20px; }
 .action-bar { margin-bottom: 15px; display: flex; gap: 10px; }
-
 .primary-btn {
   background: #4a90e2; color: #fff; border: none; border-radius: 4px;
   padding: 8px 18px; cursor: pointer; transition: 0.3s;
 }
 .primary-btn:hover { opacity: 0.9; }
+.data-table {
+  width: 100%; border-collapse: collapse; margin-top: 10px;
+}
+.data-table th, .data-table td {
+  border: 1px solid #ddd; padding: 8px; text-align: center;
+}
 </style>

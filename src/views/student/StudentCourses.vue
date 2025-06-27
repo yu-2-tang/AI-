@@ -1,0 +1,184 @@
+<template>
+  <div class="student-course-wrapper">
+    <h2>课程中心</h2>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <input v-model="keyword" placeholder="按课程名称或编号搜索" />
+      <button class="btn" @click="fetchAllCourses">搜索课程</button>
+    </div>
+
+    <!-- 全部课程 -->
+    <h3>可选课程</h3>
+    <div class="course-grid">
+      <div v-for="course in allCourses" :key="course.courseId" class="course-card">
+        <h4>{{ course.name }}</h4>
+        <p>编号: {{ course.courseCode }}</p>
+        <p>学期: {{ course.semester }}</p>
+        <p>学分: {{ course.credit }}，学时: {{ course.hours }}</p>
+        <button class="btn primary" @click="enrollCourse(course.courseId)">选课</button>
+      </div>
+    </div>
+
+    <!-- 分页控制 -->
+    <div class="pagination">
+      <button @click="prevPage" :disabled="page === 1">上一页</button>
+      <span>第 {{ page }} 页</span>
+      <button @click="nextPage" :disabled="page >= totalPages">下一页</button>
+    </div>
+
+    <!-- 我已选课程 -->
+    <h3>我已选课程</h3>
+    <div class="course-grid">
+      <div v-for="course in myCourses" :key="course.courseId" class="course-card enrolled">
+        <h4>{{ course.name }}</h4>
+        <p>编号: {{ course.courseCode }}</p>
+        <p>学期: {{ course.semester }}</p>
+        <p>学分: {{ course.credit }}，学时: {{ course.hours }}</p>
+        <button class="btn danger" @click="dropCourse(course.courseId)">退课</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '@/axios'
+
+export default {
+  name: 'StudentCourse',
+  data() {
+    return {
+      allCourses: [],     // 存放所有可选课程
+      myCourses: [],      // 存放已选课程
+      keyword: '',        // 搜索关键词
+      semester: '',       // 学期
+      page: 1,            // 当前页码
+      size: 8,            // 每页显示数量
+      totalPages: 1      // 总页数
+    }
+  },
+  methods: {
+    // 获取所有课程
+    async fetchAllCourses() {
+  try {
+    const res = await api.get('/student/courses/search', {
+      params: {
+        page: this.page,
+        size: this.size,
+        keyword: this.keyword,
+      }
+    })
+    console.log('fetchAllCourses res:', res); // 打印数据，查看返回的内容
+    this.allCourses = res?.content || []  // 确保正确获取课程列表
+    this.totalPages = res?.totalPages || 1
+  } catch (err) {
+    console.error('获取课程失败', err)
+  }
+},
+
+
+    // 获取已选课程
+    async fetchMyCourses() {
+      try {
+        const res = await api.get('/student/courses', {
+          params: { page: 1, size: 20 }
+        })
+        console.log('fetchMyCourses 返回数据:', res); // 打印数据，查看返回的内容
+        this.myCourses = res?.content || []
+      } catch (err) {
+        console.error('获取我已选课程失败', err)
+      }
+    },
+
+    // 选课
+    async enrollCourse(courseId) {
+      try {
+        await api.post(`/student/courses/${courseId}/enroll`)
+        alert('选课成功')
+        this.fetchMyCourses() // 重新加载已选课程
+      } catch (err) {
+        alert(err.response?.data?.message || '选课失败')
+      }
+    },
+
+    // 退课
+    async dropCourse(courseId) {
+      if (!confirm('确认要退选这门课程吗？')) return
+      try {
+        await api.post(`/student/courses/${courseId}/drop`)
+        alert('退课成功')
+        this.fetchMyCourses() // 重新加载已选课程
+      } catch (err) {
+        alert(err.response?.data?.message || '退课失败')
+      }
+    },
+
+    // 下一页
+    nextPage() {
+      if (this.page < this.totalPages) {
+        this.page++
+        this.fetchAllCourses()
+      }
+    },
+
+    // 上一页
+    prevPage() {
+      if (this.page > 1) {
+        this.page--
+        this.fetchAllCourses()
+      }
+    }
+  },
+  mounted() {
+    this.fetchAllCourses()   // 加载全部课程
+    this.fetchMyCourses()    // 加载已选课程
+  }
+}
+</script>
+
+<style scoped>
+.student-course-wrapper {
+  padding: 20px;
+}
+.search-bar {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+.course-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 8px;
+}
+.course-card.enrolled {
+  border-left: 4px solid #4a90e2;
+}
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+.btn.primary {
+  background: #4a90e2;
+  color: white;
+}
+.btn.danger {
+  background: #e74c3c;
+  color: white;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+</style>

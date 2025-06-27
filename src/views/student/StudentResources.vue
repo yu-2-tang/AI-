@@ -37,7 +37,7 @@ export default {
   methods: {
     async fetchResources() {
       try {
-        const res = await axios.get('/api/resource/my', {
+        const res = await axios.get('/resource/my', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
         this.resources = res.data.data || []
@@ -51,7 +51,7 @@ export default {
       console.log(`资源 ${resource.name} 学习进度：${current} / ${total}`)
 
       // 可选：向后端发送播放进度
-      // axios.post('/api/resource/progress', {
+      // axios.post('/resource/progress', {
       //   resourceId: resource.id,
       //   currentTime: current,
       //   totalTime: total

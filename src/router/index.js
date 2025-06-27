@@ -1,6 +1,5 @@
-// src/router/index.js
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import HomeView from '../views/HomeView.vue';
 
 const routes = [
   /* ---------- 公共页面 ---------- */
@@ -23,25 +22,25 @@ const routes = [
   },
   /* ---------- 管理员端 ---------- */
   {
-  path: '/admin',
-  component: () => import('@/views/admin/AdminDashboard.vue'),
-  redirect: '/admin/students',
-  meta: { requiresAuth: true, roles: ['ADMIN'] },
-  children: [
-    {
-      path: 'students',
-      name: 'AdminStudentManagement',
-      component: () => import('@/views/admin/AdminStudentManagement.vue'),
-      meta: { title: '学生管理' }
-    },
-    {
-      path: 'teachers',
-      name: 'AdminTeacherManagement',
-      component: () => import('@/views/admin/AdminTeacherManagement.vue'),
-      meta: { title: '教师管理' }
-    }
-    // 可以继续扩展更多管理员子模块，比如课程管理、审核功能等
-  ]
+    path: '/admin',
+    component: () => import('@/views/admin/AdminDashboard.vue'),
+    redirect: '/admin/students',
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
+    children: [
+      {
+        path: 'students',
+        name: 'AdminStudentManagement',
+        component: () => import('@/views/admin/AdminStudentManagement.vue'),
+        meta: { title: '学生管理' }
+      },
+      {
+        path: 'teachers',
+        name: 'AdminTeacherManagement',
+        component: () => import('@/views/admin/AdminTeacherManagement.vue'),
+        meta: { title: '教师管理' }
+      }
+      // 可以继续扩展更多管理员子模块，比如课程管理、审核功能等
+    ]
   },
 
   /* ---------- 教师端 ---------- */
@@ -66,15 +65,25 @@ const routes = [
         component: () => import('../views/shared/CourseDetail.vue'),
         props: true
       },
+      // 添加任务路由
+      {
+        path: 'tasks/add',
+        name: 'AddTask',
+        component: () => import('../views/teacher/AddTask.vue')
+      },
+
+      // 任务管理页面
       {
         path: 'tasks',
         name: 'TaskManagement',
         component: () => import('../views/teacher/TaskManagement.vue')
       },
+
+      // 任务详情页面
       {
         path: 'tasks/:id',
         name: 'TaskDetail',
-        component: () => import('../views/shared/TaskDetail.vue'),
+        component: () => import('../views/teacher/TaskDetail.vue'),
         props: true
       },
       {
@@ -83,11 +92,22 @@ const routes = [
         component: () => import('../views/teacher/GradeManagement.vue')
       },
       {
-      path: 'resources/:courseId',
-      name: 'ResourceManagement',
-      component: () => import('../views/teacher/ResourceManagement.vue'),
-      props: true
-    }
+        path: 'resources/:courseId',
+        name: 'ResourceManagement',
+        component: () => import('../views/teacher/ResourceManagement.vue'),
+        props: true
+      },
+      {
+        path: 'tasks/generate/:id',
+        name: 'GenerateExam',
+        component: () => import('../views/teacher/GenerateExam.vue')
+      },
+      {
+        path: '/teacher/courses/:courseId/knowledge-points',
+        name: 'KnowledgePointManagement',
+        component: () => import('@/views/teacher/KnowledgePointManagement.vue'),
+        props: true
+      }
     ]
   },
 
@@ -100,7 +120,7 @@ const routes = [
       {
         path: 'courses',
         name: 'StudentCourses',
-        component: () => import('../views/student/Courses.vue')
+        component: () => import('../views/student/StudentCourses.vue')
       },
       {
         path: 'courses/:id',
@@ -136,11 +156,6 @@ const routes = [
         component: () => import('../views/student/PerformanceDashboard.vue')
       },
       {
-        path: '/student/all-courses',
-        name: 'AllCourses',
-        component: () => import('../views/student/AllCourses.vue')
-      },
-      {
         path: '/student/resources',
         name: 'StudentResources',
         component: () => import('../views/student/StudentResources.vue'),
@@ -155,35 +170,12 @@ const routes = [
     name: 'NotFound',
     component: () => import('../views/NotFound.vue')
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
-})
-
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
-
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    // 需要登录但未登录，重定向到登录页
-    next('/login');
-  } else if (to.meta.guestOnly && isAuthenticated) {
-    // 已登录但访问仅限访客登录界面（比如登录页），重定向到首页
-    // 根据角色跳转不同首页
-    if (userRole === 'ADMIN') {
-      next('/admin');  // 管理员仪表盘
-    } else if (userRole === 'TEACHER') {
-      next('/teacher');
-    } else {
-      next('/student');
-    }
-  } else {
-    // 正常放行跳转
-    next();
-  }
 });
 
 
-export default router
+export default router;

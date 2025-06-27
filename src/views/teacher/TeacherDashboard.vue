@@ -40,7 +40,7 @@ export default {
   name: 'TeacherDashboard',
   data() {
     return {
-      userName: '王老师',
+      userName: `${localStorage.getItem('username')} `,
       teacherRoutes: [
         { name: 'StudentManagement', meta: { title: '学生管理' } },
         { name: 'CourseManagement', meta: { title: '课程管理' } },

@@ -2,44 +2,15 @@
   <div class="course-detail">
     <h2>{{ course.name }}</h2>
     <p>课程编号: {{ course.courseCode }}</p>
-    <p>授课教师: {{ course.teacher || '暂无' }}</p>
     <p>学分: {{ course.credit }}</p>
     <p>学时: {{ course.hours }}</p>
     <p>学期: {{ course.semester }}</p>
     <p>描述: {{ course.description }}</p>
+    <p>学生人数: {{ course.studentCount }}</p>
+    <p>任务数量: {{ course.taskCount }}</p>
 
-    <!-- 跳转资源管理按钮 -->
-    <router-link
-      :to="{ name: 'ResourceManagement', params: { courseId: courseId } }"
-      class="btn primary-btn"
-      style="display:inline-block; margin: 15px 0;"
-    >
-      进入资源管理页面
-    </router-link>
-
-    <hr />
-
-    <!-- 上传资源 -->
-    <div class="upload-section">
-      <h3>上传课程资源</h3>
-      <input type="file" ref="fileInput" @change="uploadFile" />
-      <input v-model="resourceName" placeholder="资源名称" />
-      <select v-model="resourceType">
-        <option value="PDF">PDF</option>
-        <option value="PPT">PPT</option>
-        <option value="VIDEO">视频</option>
-        <option value="DOCUMENT">文档</option>
-      </select>
-    </div>
-
-    <!-- 资源列表 -->
-    <div class="resource-list">
-      <h3>资源列表</h3>
-      <ul>
-        <li v-for="res in resources" :key="res.resourceId">
-          📄 {{ res.name }}（{{ res.type }}） - {{ res.uploader }} - {{ formatDate(res.uploadTime) }}
-        </li>
-      </ul>
+    <div class="actions">
+      <!-- 仅展示课程信息，不进行编辑和删除 -->
     </div>
   </div>
 </template>
@@ -51,71 +22,23 @@ export default {
   name: 'CourseDetail',
   data() {
     return {
-      course: {},
       courseId: this.$route.params.id,
-      resources: [],
-      resourceName: '',
-      resourceType: 'PDF'
+      course: {}
     }
   },
   methods: {
     async fetchCourseDetail() {
       try {
-        const res = await axios.get(`/api/teacher/courses/${this.courseId}`, {
-          headers: { Authorization: `Bearer ${localStorage.token}` }
-        })
-        this.course = res.data.data || {}
+        const res = await axios.get(`/teacher/courses/${this.courseId}`)
+        this.course = res.data || {}
       } catch (err) {
         console.error('获取课程详情失败', err)
-        alert('获取课程详情失败')
+        alert(err.response?.data?.message || '加载课程详情失败')
       }
-    },
-    async fetchResources() {
-      try {
-        const res = await axios.get(`/api/teacher/courses/${this.courseId}/resources`, {
-          headers: { Authorization: `Bearer ${localStorage.token}` }
-        })
-        this.resources = res.data.data.content || []
-      } catch (err) {
-        console.error('获取资源失败', err)
-      }
-    },
-    async uploadFile(e) {
-      const file = e.target.files[0]
-      if (!file || !this.resourceName || !this.resourceType) {
-        alert('请填写资源名称和类型并选择文件')
-        return
-      }
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('name', this.resourceName)
-      formData.append('type', this.resourceType)
-
-      try {
-        await axios.post(`/api/teacher/courses/${this.courseId}/resources`, formData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        this.resourceName = ''
-        this.resourceType = 'PDF'
-        this.$refs.fileInput.value = ''
-        this.fetchResources()
-      } catch (err) {
-        console.error('上传失败', err)
-        alert('上传资源失败')
-      }
-    },
-    formatDate(dateStr) {
-      const d = new Date(dateStr)
-      return d.toLocaleString()
     }
   },
   mounted() {
     this.fetchCourseDetail()
-    this.fetchResources()
   }
 }
 </script>
@@ -124,49 +47,6 @@ export default {
 .course-detail {
   padding: 20px;
   max-width: 800px;
-  margin: 0 auto;
-}
-
-.upload-section {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-}
-.upload-section input,
-.upload-section select {
-  display: block;
-  margin: 10px 0;
-  padding: 6px;
-  width: 100%;
-}
-
-.resource-list {
-  margin-top: 30px;
-}
-.resource-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-.resource-list li {
-  padding: 6px 0;
-  border-bottom: 1px dashed #ccc;
-}
-
-/* 按钮样式 */
-.btn {
-  border: none;
-  border-radius: 4px;
-  padding: 6px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.25s;
-}
-.primary-btn {
-  background: #4a90e2;
-  color: #fff;
-}
-.primary-btn:hover {
-  opacity: 0.9;
+  margin: auto;
 }
 </style>
