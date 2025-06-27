@@ -52,7 +52,14 @@ const routes = [
       {
         path: 'students',
         name: 'StudentManagement',
-        component: () => import('../views/teacher/StudentManagement.vue')
+        component: () => import('../views/teacher/StudentManagement.vue'),
+        meta: { title: '学生管理' }
+      },
+      {
+        path: 'courses/:courseId/students',
+        name: 'CourseStudents',
+        component: () => import('../views/teacher/CourseStudents.vue'),
+        meta: { title: '课程学生列表' }
       },
       {
         path: 'courses',
@@ -121,6 +128,11 @@ const routes = [
         path: 'courses',
         name: 'StudentCourses',
         component: () => import('../views/student/StudentCourses.vue')
+      },
+      {
+        path: '/course-detail/:id',
+        name: 'CourseDetail',
+        component: () => import('@/views/shared/CourseDetail.vue')
       },
       {
         path: 'courses/:id',

@@ -35,7 +35,10 @@
         <p>编号: {{ course.courseCode }}</p>
         <p>学期: {{ course.semester }}</p>
         <p>学分: {{ course.credit }}，学时: {{ course.hours }}</p>
-        <button class="btn danger" @click="dropCourse(course.courseId)">退课</button>
+        <div class="button-group">
+          <button class="btn danger" @click="dropCourse(course.courseId)">退课</button>
+          <button class="btn primary" @click="goToCourseDetail(course.courseId)">课程详情</button>
+        </div>
       </div>
     </div>
   </div>
@@ -48,72 +51,71 @@ export default {
   name: 'StudentCourse',
   data() {
     return {
-      allCourses: [],     // 存放所有可选课程
-      myCourses: [],      // 存放已选课程
-      keyword: '',        // 搜索关键词
-      semester: '',       // 学期
-      page: 1,            // 当前页码
-      size: 8,            // 每页显示数量
-      totalPages: 1      // 总页数
+      allCourses: [],
+      myCourses: [],
+      keyword: '',
+      semester: '',
+      page: 1,
+      size: 8,
+      totalPages: 1
     }
   },
   methods: {
-    // 获取所有课程
     async fetchAllCourses() {
-  try {
-    const res = await api.get('/student/courses/search', {
-      params: {
-        page: this.page,
-        size: this.size,
-        keyword: this.keyword,
+      try {
+        const res = await api.get('/student/courses/search', {
+          params: {
+            page: this.page,
+            size: this.size,
+            keyword: this.keyword
+          }
+        })
+        this.allCourses = res?.content || []
+        this.totalPages = res?.totalPages || 1
+      } catch (err) {
+        console.error('获取课程失败', err)
       }
-    })
-    console.log('fetchAllCourses res:', res); // 打印数据，查看返回的内容
-    this.allCourses = res?.content || []  // 确保正确获取课程列表
-    this.totalPages = res?.totalPages || 1
-  } catch (err) {
-    console.error('获取课程失败', err)
-  }
-},
+    },
 
-
-    // 获取已选课程
     async fetchMyCourses() {
       try {
         const res = await api.get('/student/courses', {
           params: { page: 1, size: 20 }
         })
-        console.log('fetchMyCourses 返回数据:', res); // 打印数据，查看返回的内容
         this.myCourses = res?.content || []
       } catch (err) {
         console.error('获取我已选课程失败', err)
       }
     },
 
-    // 选课
     async enrollCourse(courseId) {
       try {
         await api.post(`/student/courses/${courseId}/enroll`)
         alert('选课成功')
-        this.fetchMyCourses() // 重新加载已选课程
+        this.fetchMyCourses()
       } catch (err) {
         alert(err.response?.data?.message || '选课失败')
       }
     },
 
-    // 退课
     async dropCourse(courseId) {
       if (!confirm('确认要退选这门课程吗？')) return
       try {
         await api.post(`/student/courses/${courseId}/drop`)
         alert('退课成功')
-        this.fetchMyCourses() // 重新加载已选课程
+        this.fetchMyCourses()
       } catch (err) {
         alert(err.response?.data?.message || '退课失败')
       }
     },
 
-    // 下一页
+    goToCourseDetail(courseId) {
+      this.$router.push({
+        name: 'CourseDetail',
+        params: { id: courseId }
+      })
+    },
+
     nextPage() {
       if (this.page < this.totalPages) {
         this.page++
@@ -121,7 +123,6 @@ export default {
       }
     },
 
-    // 上一页
     prevPage() {
       if (this.page > 1) {
         this.page--
@@ -130,8 +131,8 @@ export default {
     }
   },
   mounted() {
-    this.fetchAllCourses()   // 加载全部课程
-    this.fetchMyCourses()    // 加载已选课程
+    this.fetchAllCourses()
+    this.fetchMyCourses()
   }
 }
 </script>
@@ -159,6 +160,11 @@ export default {
 }
 .course-card.enrolled {
   border-left: 4px solid #4a90e2;
+}
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
 }
 .btn {
   padding: 6px 12px;

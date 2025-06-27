@@ -1,38 +1,30 @@
 <template>
   <div class="student-mgmt">
-    <h2>学生信息管理</h2>
+    <h2>课程学生管理</h2>
 
-    <!-- 批量导入导出按钮 -->
-    <div class="action-bar">
-      <input type="file" accept=".csv,.xlsx" @change="importStudents" hidden ref="fileInput" />
-      <button class="primary-btn" @click="$refs.fileInput.click()">批量导入</button>
-      <button class="primary-btn" @click="exportStudents">导出全部</button>
-      <button class="primary-btn" @click="addStudent">新增学生</button>
+    <div class="course-list">
+      <div
+        v-for="course in courses"
+        :key="course.courseId"
+        class="course-card"
+      >
+        <h3>{{ course.name }}</h3>
+        <p>课程代码：{{ course.courseCode }}</p>
+        <p>学期：{{ course.semester }}</p>
+
+        <div class="action-bar">
+          <input
+            type="file"
+            accept=".csv,.xlsx"
+            :ref="`fileInput-${course.courseId}`"
+            hidden
+            @change="(e) => importStudents(e, course.courseId)"
+          />
+          <button @click="triggerFile(course.courseId)">导入学生</button>
+          <button @click="goToStudentList(course.courseId)">查看学生</button>
+        </div>
+      </div>
     </div>
-
-    <!-- 学生表格 -->
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>姓名</th>
-          <th>专业</th>
-          <th>年级</th>
-          <th>邮箱</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="student in students" :key="student.id">
-          <td>{{ student.realName }}</td>
-          <td>{{ student.major }}</td>
-          <td>{{ student.grade }}</td>
-          <td>{{ student.email }}</td>
-          <td>
-            <button @click="deleteStudent(student.studentId)">删除</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
@@ -43,82 +35,94 @@ export default {
   name: 'StudentManagement',
   data() {
     return {
-      students: [], // 存放课程学生数据
-      courseId: this.$route.params.courseId,
+      courses: []
     };
   },
-  mounted() {
-    this.fetchStudents();  // 加载学生列表
+  async mounted() {
+    try {
+      const res = await axios.get('/teacher/courses');
+      this.courses = res.data || [];
+    } catch (err) {
+      console.error('获取课程失败', err);
+      alert('加载课程失败');
+    }
   },
   methods: {
-    // 获取学生信息
-    async fetchStudents() {
-      try {
-        const response = await axios.get(`/api/teacher/courses/${this.courseId}/students`);
-        this.students = response.data; // 处理返回的学生数据
-      } catch (err) {
-        console.error('获取学生信息失败', err);
-        alert('获取学生信息失败');
+    triggerFile(courseId) {
+      const input = this.$refs[`fileInput-${courseId}`];
+      if (input && input.click) {
+        input.click();
+      } else if (Array.isArray(input)) {
+        input[0]?.click(); // 兼容老 Vue 写法
+      } else {
+        console.warn('input not found for', courseId, input);
       }
     },
 
-    // 批量导入学生
-    async importStudents() {
-      const fileInput = this.$refs.fileInput;
+    async importStudents(event, courseId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
       const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
+      formData.append('file', file);
 
       try {
-        await axios.post(`/api/teacher/courses/${this.courseId}/import-students`, formData, {
+        await axios.post(`/teacher/courses/${courseId}/import-students`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        alert('学生导入成功');
-        this.fetchStudents(); // 重新加载学生列表
+        alert('导入成功');
       } catch (err) {
-        console.error('导入学生失败', err);
-        alert('导入学生失败');
+        console.error('导入失败', err);
+        alert(err.response?.data?.message || '导入失败');
       }
     },
 
-    // 导出学生
-    exportStudents() {
-      console.log('导出学生列表');
-      // 你可以根据后端的API实现学生的导出功能
-    },
-
-    // 新增学生
-    addStudent() {
-      console.log('新增学生');
-      // 跳转到新增学生页面
-    },
-
-    // 删除学生
-    async deleteStudent(studentId) {
-      try {
-        await axios.delete(`/api/teacher/courses/${this.courseId}/students/${studentId}`);
-        alert('学生删除成功');
-        this.fetchStudents();  // 重新加载学生列表
-      } catch (err) {
-        console.error('删除学生失败', err);
-        alert('删除学生失败');
-      }
+    goToStudentList(courseId) {
+      this.$router.push({
+        name: 'CourseStudents',
+        params: { courseId }
+      });
     }
   }
 };
 </script>
 
 <style scoped>
-.student-mgmt { padding: 20px; }
-.action-bar { margin-bottom: 15px; display: flex; gap: 10px; }
-.primary-btn {
-  background: #4a90e2; color: #fff; border: none; border-radius: 4px;
-  padding: 8px 18px; cursor: pointer; transition: 0.3s;
+.student-mgmt {
+  padding: 20px;
 }
-.primary-btn:hover { opacity: 0.9; }
-.data-table {
-  width: 100%; border-collapse: collapse; margin-top: 10px;
+
+.course-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
 }
-.data-table th, .data-table td {
-  border: 1px solid #ddd; padding: 8px; text-align: center;
+
+.course-card {
+  width: 300px;
+  padding: 15px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-bar {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
 }
 </style>
