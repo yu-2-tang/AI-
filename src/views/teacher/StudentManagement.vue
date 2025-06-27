@@ -4,7 +4,7 @@
 
     <div class="course-list">
       <div
-        v-for="course in courses"
+        v-for="course in paginatedCourses"
         :key="course.courseId"
         class="course-card"
       >
@@ -20,10 +20,17 @@
             hidden
             @change="(e) => importStudents(e, course.courseId)"
           />
-          <button @click="triggerFile(course.courseId)">导入学生</button>
-          <button @click="goToStudentList(course.courseId)">查看学生</button>
+          <button class="btn import-btn" @click="triggerFile(course.courseId)">导入学生</button>
+          <button class="btn view-btn" @click="goToStudentList(course.courseId)">查看学生</button>
         </div>
       </div>
+    </div>
+
+   <!-- 分页控制 -->
+    <div class="pagination">
+      <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+      <span>第 {{ page }} / {{ totalPages }} 页</span>
+      <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
     </div>
   </div>
 </template>
@@ -35,8 +42,19 @@ export default {
   name: 'StudentManagement',
   data() {
     return {
-      courses: []
+      courses: [],
+      page: 1,
+      size: 6
     };
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.courses.length / this.size) || 1;
+    },
+    paginatedCourses() {
+      const start = (this.page - 1) * this.size;
+      return this.courses.slice(start, start + this.size);
+    }
   },
   async mounted() {
     try {
@@ -53,12 +71,11 @@ export default {
       if (input && input.click) {
         input.click();
       } else if (Array.isArray(input)) {
-        input[0]?.click(); // 兼容老 Vue 写法
+        input[0]?.click();
       } else {
         console.warn('input not found for', courseId, input);
       }
     },
-
     async importStudents(event, courseId) {
       const file = event.target.files[0];
       if (!file) return;
@@ -76,12 +93,21 @@ export default {
         alert(err.response?.data?.message || '导入失败');
       }
     },
-
     goToStudentList(courseId) {
       this.$router.push({
         name: 'CourseStudents',
         params: { courseId }
       });
+    },
+    nextPage() {
+      if (this.page < this.totalPages) {
+        this.page++;
+      }
+    },
+    prevPage() {
+      if (this.page > 1) {
+        this.page--;
+      }
     }
   }
 };
@@ -124,5 +150,12 @@ button {
 
 button:hover {
   opacity: 0.9;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 </style>
