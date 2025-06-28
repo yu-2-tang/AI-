@@ -43,13 +43,10 @@
     <div v-if="showEditForm" class="modal-overlay">
       <div class="modal">
         <h3>编辑知识点</h3>
-
         <label>知识点名称</label>
-        <input v-model="editKnowledgePointData.name" placeholder="请输入知识点名称" required />
-
+        <input v-model="editKnowledgePointData.name" required />
         <label>知识点描述</label>
-        <textarea v-model="editKnowledgePointData.description" placeholder="请输入知识点描述" required></textarea>
-
+        <textarea v-model="editKnowledgePointData.description" required></textarea>
         <div class="modal-actions">
           <button @click="updateKnowledgePoint">保存</button>
           <button class="danger-btn" @click="showEditForm = false">取消</button>
@@ -68,107 +65,87 @@ export default {
     return {
       courseId: this.$route.params.courseId,
       courseName: "",
-      knowledgePoints: [], // 存放所有的知识点
+      knowledgePoints: [],
       newKnowledgePoint: {
         name: "",
         description: ""
       },
-      showEditForm: false, // 控制编辑弹窗
+      showEditForm: false,
       editKnowledgePointData: {
-        pointId: null,  // 后端返回的字段应为 pointId
+        pointId: null,
         name: "",
         description: ""
       }
     };
   },
   methods: {
-    // 获取课程信息
     async fetchCourseInfo() {
       try {
         const res = await axios.get(`/teacher/courses/${this.courseId}`);
-        this.courseName = res.data.name;
+        this.courseName = res.data.name || res.data.data?.name || "";
       } catch (err) {
         console.error("获取课程信息失败", err);
       }
     },
-
-    // 获取所有知识点
     async fetchKnowledgePoints() {
       try {
-        const response = await axios.get(
-          `/teacher/courses/${this.courseId}/knowledge-points`
-        );
-        this.knowledgePoints = response.data || []; // 修正后的数据使用方式
+        const res = await axios.get(`/teacher/courses/${this.courseId}/knowledge-points`);
+        this.knowledgePoints = res.data || [];
       } catch (err) {
         console.error("获取知识点失败", err);
       }
     },
-
-    // 添加知识点
     async addKnowledgePoint() {
       if (!this.newKnowledgePoint.name || !this.newKnowledgePoint.description) {
         alert("请填写知识点名称和描述！");
         return;
       }
-
       try {
-        await axios.post(
-          `/teacher/courses/${this.courseId}/knowledge-points`,
-          this.newKnowledgePoint
-        );
-        alert("知识点添加成功");
-        this.fetchKnowledgePoints(); // 重新加载知识点
-        this.newKnowledgePoint = { name: "", description: "" }; // 重置表单
+        await axios.post(`/teacher/courses/${this.courseId}/knowledge-points`, this.newKnowledgePoint);
+        alert("添加成功");
+        this.fetchKnowledgePoints();
+        this.newKnowledgePoint = { name: "", description: "" };
       } catch (err) {
-        console.error("添加知识点失败", err);
-        alert("添加知识点失败");
+        console.error("添加失败", err);
+        alert("添加失败");
       }
     },
-
-    // 查看知识点
-    viewKnowledgePoint(knowledgePoint) {
-      alert(`查看知识点详情，ID: ${knowledgePoint.pointId}`);
+    viewKnowledgePoint(point) {
+      alert(`查看知识点 ID: ${point.pointId}`);
     },
-
-    // 编辑知识点
-    editKnowledgePoint(knowledgePoint) {
-      this.editKnowledgePointData = { ...knowledgePoint };
+    editKnowledgePoint(point) {
+      this.editKnowledgePointData = { ...point };
       this.showEditForm = true;
     },
-
-    // 更新知识点
     async updateKnowledgePoint() {
       try {
         await axios.put(
           `/teacher/courses/${this.courseId}/knowledge-points/${this.editKnowledgePointData.pointId}`,
           this.editKnowledgePointData
         );
-        alert("知识点更新成功");
+        alert("更新成功");
         this.showEditForm = false;
-        this.fetchKnowledgePoints(); // 重新加载知识点
+        this.fetchKnowledgePoints();
       } catch (err) {
-        console.error("更新知识点失败", err);
-        alert("更新知识点失败");
+        console.error("更新失败", err);
+        alert("更新失败");
       }
     },
-
-    // 删除知识点
-  async deleteKnowledgePoint(knowledgePoint) {
-    if (!confirm(`确定删除知识点 "${knowledgePoint.name}" 吗？`)) return;
+    async deleteKnowledgePoint(point) {
+      if (!confirm(`确认删除知识点 "${point.name}" 吗？`)) return;
       try {
-        await axios.delete(`/teacher/knowledge-points/${knowledgePoint.pointId}`);
-    alert("删除成功");
-    this.fetchKnowledgePoints(); // 重新加载知识点
-  } catch (err) {
-    console.error("删除知识点失败", err);
-    alert("删除失败");
-  }
-}
-},
-
+        await axios.delete(`/teacher/knowledge-points/${point.pointId}`);
+        alert("删除成功");
+        this.fetchKnowledgePoints();
+      } catch (err) {
+        console.error("删除失败", err);
+        alert("删除失败");
+      }
+    }
+  },
   mounted() {
     this.fetchCourseInfo();
-    this.fetchKnowledgePoints(); // 加载知识点列表
+    this.fetchKnowledgePoints();
   }
 };
 </script>
@@ -312,4 +289,5 @@ tbody tr:hover {
   justify-content: flex-end;
   gap: 10px;
 }
+
 </style>
