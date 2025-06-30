@@ -69,18 +69,22 @@ export default {
   },
   methods: {
     getRole() {
-      return localStorage.getItem('role') || 'student'
+      return localStorage.getItem('userRole') || 'STUDENT'
     },
     getDetailUrl() {
-      return this.getRole() === 'teacher'
+      return this.getRole() === 'TEACHER'
         ? `/teacher/courses/${this.courseId}`
-        : `/student/courses/detail/${this.courseId}`
+        : `/student/courses/${this.courseId}`
     },
     getGraphUrl() {
-      return `/knowledge-graph/course/${this.courseId}`
+      return this.getRole() === 'TEACHER'
+        ? `/teacher/courses/${this.courseId}/knowledge-graph`
+        : `/student/courses/${this.courseId}/knowledge-graph`
     },
     getResourceUrl() {
-      return `/teacher/courses/${this.courseId}/resources`
+      return this.getRole() === 'TEACHER'
+        ? `/teacher/courses/${this.courseId}/resources`
+        : `/student/courses/${this.courseId}/resources`
     },
 
     async fetchCourseDetail() {
@@ -95,38 +99,111 @@ export default {
     async renderKnowledgeGraph() {
       try {
         const res = await axios.get(this.getGraphUrl())
-        const { nodes, edges } = res || { nodes: [], edges: [] }
+        
+        // 确保数据结构正确
+        const graphData = res.data || {}
+        const nodes = graphData.nodes || []
+        const edges = graphData.edges || []
 
-        const chart = echarts.init(document.getElementById("courseKnowledgeGraph"))
+        // 等待DOM渲染完成
+        await this.$nextTick()
+        
+        const chartElement = document.getElementById("courseKnowledgeGraph")
+        if (!chartElement) {
+          return
+        }
+
+        // 销毁已存在的图表实例
+        const existingChart = echarts.getInstanceByDom(chartElement)
+        if (existingChart) {
+          existingChart.dispose()
+        }
+
+        const chart = echarts.init(chartElement)
+        
+        // 如果没有数据，显示提示信息
+        if (nodes.length === 0) {
+          chartElement.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+              <div style="text-align: center;">
+                <p>暂无知识图谱数据</p>
+                <p style="font-size: 12px;">课程还没有建立知识点关系</p>
+              </div>
+            </div>
+          `
+          return
+        }
+        
         const option = {
-          tooltip: {},
+          tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+              if (params.dataType === 'node') {
+                return `${params.data.name}<br/>ID: ${params.data.id}`
+              } else if (params.dataType === 'edge') {
+                return `${params.data.source} → ${params.data.target}<br/>关系: ${params.data.type || '关联'}`
+              }
+            }
+          },
           series: [
             {
               type: "graph",
               layout: "force",
               roam: true,
-              label: { show: true },
+              label: { 
+                show: true,
+                position: 'right',
+                formatter: '{b}'
+              },
               force: {
                 repulsion: 800,
-                edgeLength: [50, 150]
+                edgeLength: [50, 150],
+                layoutAnimation: true
               },
               data: nodes.map(n => ({
                 id: n.id,
-                name: n.name,
-                symbolSize: 50
+                name: n.name || `节点${n.id}`,
+                symbolSize: 50,
+                itemStyle: {
+                  color: '#4CAF50'
+                }
               })),
               edges: edges.map(e => ({
                 source: e.source,
                 target: e.target,
-                label: { show: true, formatter: () => e.type || "关联" }
+                type: e.type || "关联",
+                label: { 
+                  show: true, 
+                  formatter: e.type || "关联"
+                },
+                lineStyle: {
+                  color: '#999'
+                }
               }))
             }
           ]
         }
+        
         chart.setOption(option)
+        
+        // 窗口大小改变时重新调整图表
+        window.addEventListener('resize', () => {
+          chart.resize()
+        })
+        
       } catch (err) {
-        console.error("加载知识图谱失败", err)
-        alert(err.response?.message || "知识图谱加载失败")
+        // 显示错误信息而不是弹窗
+        const chartElement = document.getElementById("courseKnowledgeGraph")
+        if (chartElement) {
+          chartElement.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+              <div style="text-align: center;">
+                <p>知识图谱加载失败</p>
+                <p style="font-size: 12px;">${err.response?.data?.message || err.message}</p>
+              </div>
+            </div>
+          `
+        }
       }
     },
     async fetchResources() {
@@ -142,10 +219,12 @@ export default {
     },
     async downloadResource(resource) {
       try {
-        const response = await axios.get(
-          `/teacher/resources/${resource.resourceId}/download`,
-          { responseType: 'blob' }
-        )
+        const role = this.getRole()
+        const downloadUrl = role === 'TEACHER'
+          ? `/teacher/resources/${resource.resourceId}/download`
+          : `/student/resources/${resource.resourceId}/download`
+        
+        const response = await axios.get(downloadUrl, { responseType: 'blob' })
 
         const url = window.URL.createObjectURL(new Blob([response.data]))
         const link = document.createElement('a')

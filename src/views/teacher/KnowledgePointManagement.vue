@@ -120,7 +120,7 @@ export default {
     async updateKnowledgePoint() {
       try {
         await axios.put(
-          `/teacher/courses/${this.courseId}/knowledge-points/${this.editKnowledgePointData.pointId}`,
+          `/teacher/knowledge-points/${this.editKnowledgePointData.pointId}`,
           this.editKnowledgePointData
         );
         alert("更新成功");
