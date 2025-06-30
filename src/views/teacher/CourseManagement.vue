@@ -31,8 +31,65 @@
       <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
     </div>
 
-    <!-- 添加/编辑课程弹窗同上 -->
-    <!-- ...省略未改动部分（弹窗）... -->
+   <!-- 添加课程弹窗 -->
+    <div v-if="showAddForm" class="modal-overlay">
+      <div class="modal">
+        <h3>添加新课程</h3>
+
+        <label>课程名称</label>
+        <input v-model="newCourse.name" placeholder="请输入课程名称" />
+
+        <label>课程代码</label>
+        <input v-model="newCourse.courseCode" placeholder="请输入课程代码" />
+
+        <label>学期</label>
+        <input v-model="newCourse.semester" placeholder="例如：2025春季" />
+
+        <label>学分</label>
+        <input v-model.number="newCourse.credit" placeholder="请输入学分" type="number" />
+
+        <label>学时</label>
+        <input v-model.number="newCourse.hours" placeholder="请输入学时" type="number" />
+
+        <label>课程描述</label>
+        <textarea v-model="newCourse.description" placeholder="请输入课程描述"></textarea>
+
+        <div class="modal-actions">
+          <button @click="createCourse">保存</button>
+          <button class="danger-btn" @click="showAddForm = false">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑课程弹窗 -->
+    <div v-if="showEditForm" class="modal-overlay">
+      <div class="modal">
+        <h3>编辑课程</h3>
+
+        <label>课程名称</label>
+        <input v-model="editCourseData.name" placeholder="请输入课程名称" />
+
+        <label>课程代码</label>
+        <input v-model="editCourseData.courseCode" placeholder="请输入课程代码" />
+
+        <label>学期</label>
+        <input v-model="editCourseData.semester" placeholder="例如：2025春季" />
+
+        <label>学分</label>
+        <input v-model.number="editCourseData.credit" placeholder="请输入学分" type="number" />
+
+        <label>学时</label>
+        <input v-model.number="editCourseData.hours" placeholder="请输入学时" type="number" />
+
+        <label>课程描述</label>
+        <textarea v-model="editCourseData.description" placeholder="请输入课程描述"></textarea>
+
+        <div class="modal-actions">
+          <button @click="updateCourse">保存</button>
+          <button class="danger-btn" @click="showEditForm = false">取消</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -76,13 +133,14 @@ export default {
         alert(err.response?.data?.message || '加载课程失败')
       }
     },
+     // 创建新课程
     async createCourse() {
       try {
         await axios.post('/teacher/courses', this.newCourse)
         alert('课程添加成功')
         this.showAddForm = false
         this.resetForm()
-        this.fetchCourses()
+        this.fetchCourses()  // 刷新课程列表
       } catch (err) {
         console.error('添加课程失败', err)
         alert(err.response?.data?.message || '添加失败')
@@ -99,16 +157,19 @@ export default {
         alert(err.response?.data?.message || '删除失败')
       }
     },
+     // 编辑课程按钮
     editCourse(course) {
+      // 打开编辑课程的弹窗并加载课程信息
       this.editCourseData = { ...course }
       this.showEditForm = true
     },
+    // 更新课程
     async updateCourse() {
       try {
         await axios.put(`/teacher/courses/${this.editCourseData.courseId}`, this.editCourseData)
         alert('课程更新成功')
         this.showEditForm = false
-        this.fetchCourses()
+        this.fetchCourses()  // 刷新课程列表
       } catch (err) {
         console.error('更新课程失败', err)
         alert(err.response?.data?.message || '更新失败')

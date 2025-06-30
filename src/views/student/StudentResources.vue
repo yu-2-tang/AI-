@@ -53,10 +53,11 @@ export default {
         const courseWithResources = await Promise.all(
           courseList.map(async (course) => {
             try {
-              const res = await axios.get('/student/resources', {
-                params: { courseId: course.courseId }
-              });
-              course.resources = Array.isArray ? res : [];
+             const res = await axios.get(`/student/courses/${course.courseId}/resources`, {
+              params: { page: 1, size: 100 }
+          });
+              course.resources = res.data?.content || [];
+
             } catch (err) {
               console.error(`获取课程 ${course.name} 的资源失败`, err);
               course.resources = [];

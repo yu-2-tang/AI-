@@ -80,10 +80,9 @@ export default {
       return `/knowledge-graph/course/${this.courseId}`
     },
     getResourceUrl() {
-      return this.getRole() === 'teacher'
-        ? `/teacher/courses/${this.courseId}/resources`
-        : `/student/courses/${this.courseId}/resources`
+      return `/teacher/courses/${this.courseId}/resources`
     },
+
     async fetchCourseDetail() {
       try {
         const res = await axios.get(this.getDetailUrl())
@@ -135,7 +134,7 @@ export default {
         const res = await axios.get(this.getResourceUrl(), {
           params: { page: 1, size: 100 }
         })
-        this.resources = res.content || []
+        this.resources = res.data?.content || []
       } catch (err) {
         console.error('加载资源失败', err)
         alert(err.response?.message || '资源加载失败')
@@ -147,6 +146,7 @@ export default {
           `/teacher/resources/${resource.resourceId}/download`,
           { responseType: 'blob' }
         )
+
         const url = window.URL.createObjectURL(new Blob([response.data]))
         const link = document.createElement('a')
         link.href = url

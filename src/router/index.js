@@ -48,6 +48,7 @@ const routes = [
     path: '/teacher',
     component: () => import('@/views/teacher/TeacherDashboard.vue'),
     redirect: '/teacher/students',
+    meta: { requiresAuth: true, roles: ['TEACHER'] }, // ✅ 添加权限控制
     children: [
       {
         path: 'students',
@@ -112,6 +113,7 @@ const routes = [
   {
     path: '/student',
     component: () => import('@/views/student/StudentDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['STUDENT'] }, // ✅ 添加权限控制
     redirect: '/student/courses',
     children: [
       {

@@ -17,14 +17,13 @@
           <option value="DOCUMENT">文档</option>
         </select>
       </div>
-      <!-- 添加知识点类型 -->
       <div class="form-group">
-        <label>知识点类型</label>
-        <select v-model="uploadData.knowledgePointType">
-          <option value="理论">理论</option>
-          <option value="实践">实践</option>
-          <option value="案例">案例</option>
-          <option value="实验">实验</option>
+        <label>关联知识点</label>
+        <select v-model="uploadData.knowledgePointId">
+          <option disabled value="">请选择知识点</option>
+          <option v-for="point in knowledgePoints" :key="point.pointId" :value="point.pointId">
+            {{ point.name }}
+          </option>
         </select>
       </div>
       <div class="form-group">
@@ -67,7 +66,6 @@
       </table>
     </div>
 
-    <!-- 分页控件 -->
     <div class="pagination" v-if="totalPages > 1">
       <button 
         v-for="page in totalPages" 
@@ -91,11 +89,12 @@ export default {
       courseId: this.$route.params.courseId,
       courseName: '',
       resources: [],
+      knowledgePoints: [],
       uploadData: {
         name: '',
         type: 'PDF',
         description: '',
-        knowledgePointType: '理论',  // 默认值为"理论"
+        knowledgePointId: '',
         file: null
       },
       currentPage: 1,
@@ -113,41 +112,40 @@ export default {
         console.error('获取课程信息失败', err);
       }
     },
-
     async fetchResources() {
       try {
         const res = await axios.get(`/teacher/courses/${this.courseId}/resources`, {
-          params: {
-            page: this.currentPage,
-            size: this.pageSize
-          }
+          params: { page: this.currentPage, size: this.pageSize }
         });
-        
-        const responseData = res.data;
-        this.resources = responseData.content || [];
-        this.totalElements = responseData.totalElements || 0;
-        this.totalPages = responseData.totalPages || 0;
+        this.resources = res.data.content || [];
+        this.totalElements = res.data.totalElements || 0;
+        this.totalPages = res.data.totalPages || 0;
       } catch (err) {
         console.error('获取资源失败', err);
       }
     },
-
+    async fetchKnowledgePoints() {
+      try {
+        const res = await axios.get(`/teacher/courses/${this.courseId}/knowledge-points`);
+        this.knowledgePoints = res.data || [];
+      } catch (err) {
+        console.error('获取知识点失败', err);
+      }
+    },
     handleFileChange(e) {
       this.uploadData.file = e.target.files[0];
     },
-
     async uploadResource() {
       if (!this.uploadData.file) {
         alert('请选择文件');
         return;
       }
-
       const formData = new FormData();
       formData.append('file', this.uploadData.file);
       formData.append('name', this.uploadData.name);
       formData.append('type', this.uploadData.type);
       formData.append('description', this.uploadData.description);
-      formData.append('knowledgePointType', this.uploadData.knowledgePointType); // 知识点类型
+      formData.append('knowledgePointId', this.uploadData.knowledgePointId);
 
       try {
         await axios.post(
@@ -155,7 +153,6 @@ export default {
           formData,
           { headers: { 'Content-Type': 'multipart/form-data' } }
         );
-
         alert('上传成功');
         this.resetUploadForm();
         this.fetchResources();
@@ -164,63 +161,67 @@ export default {
         alert(`上传失败: ${err.response?.data?.message || err.message}`);
       }
     },
-
     resetUploadForm() {
       this.uploadData = {
         name: '',
         type: 'PDF',
         description: '',
-        knowledgePointType: '理论',  // 默认值为"理论"
+        knowledgePointId: '',
         file: null
       };
       this.$refs.fileInput.value = '';
     },
-
     async downloadResource(resource) {
-      try {
-        const response = await axios.get(
-          `/teacher/resources/${resource.resourceId}/download`,
-          { responseType: 'blob' }
-        );
+  try {
+    const response = await axios.get(
+      `/teacher/resources/${resource.resourceId}/download`,
+      { responseType: 'blob' }
+    );
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${resource.name}.${resource.url.split('.').pop()}`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (err) {
-        console.error('下载失败', err);
-        alert('下载失败');
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = '下载文件';
+
+    // 从响应头中提取文件名
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename\*?=UTF-8''(.+?)(;|$)/);
+      if (fileNameMatch) {
+        filename = decodeURIComponent(fileNameMatch[1]);
+      } else {
+        const fallbackMatch = contentDisposition.match(/filename="(.+?)"/);
+        if (fallbackMatch) filename = fallbackMatch[1];
       }
-    },
+    }
+
+    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error('下载失败', err);
+    alert('下载失败');
+  }
+},
 
     async deleteResource(resource) {
       if (!confirm(`确定删除资源 "${resource.name}" 吗？`)) return;
-
       try {
         await axios.delete(`/teacher/resources/${resource.resourceId}`);
         alert('删除成功');
         this.fetchResources();
       } catch (err) {
         console.error('删除失败', err);
-        if (err.response?.status === 409) {
-          alert('资源被任务引用，无法删除');
-        } else {
-          alert('删除失败');
-        }
+        alert('删除失败');
       }
     },
-
     async updateResource(resource) {
       const newName = prompt('请输入新的资源名称', resource.name);
       if (!newName) return;
-
       try {
-        await axios.put(`/teacher/resources/${resource.resourceId}`, {
-          name: newName
-        });
+        await axios.put(`/teacher/resources/${resource.resourceId}`, { name: newName });
         alert('更新成功');
         this.fetchResources();
       } catch (err) {
@@ -228,35 +229,26 @@ export default {
         alert('更新失败');
       }
     },
-
     async viewResource(resource) {
-      try {
-        alert(`查看资源页面，资源ID: ${resource.resourceId}`);
-      } catch (err) {
-        console.error('查看资源失败', err);
-        alert('查看资源失败');
-      }
+      alert(`查看资源页面，资源ID: ${resource.resourceId}`);
     },
-
     changePage(page) {
       this.currentPage = page;
       this.fetchResources();
     },
-
     formatDate(dateStr) {
       return new Date(dateStr).toLocaleString();
     },
-
     formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / 1048576).toFixed(1) + ' MB';
     }
   },
-
   mounted() {
     this.fetchCourseInfo();
     this.fetchResources();
+    this.fetchKnowledgePoints();
   }
 };
 </script>
