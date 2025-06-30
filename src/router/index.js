@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
 
 const routes = [
   /* ---------- 公共页面 ---------- */
@@ -20,6 +20,7 @@ const routes = [
     name: 'register',
     component: () => import('../views/RegisterView.vue')
   },
+
   /* ---------- 管理员端 ---------- */
   {
     path: '/admin',
@@ -39,78 +40,67 @@ const routes = [
         component: () => import('@/views/admin/AdminTeacherManagement.vue'),
         meta: { title: '教师管理' }
       }
-      // 可以继续扩展更多管理员子模块，比如课程管理、审核功能等
     ]
   },
 
   /* ---------- 教师端 ---------- */
   {
     path: '/teacher',
-    component: () => import('../views/teacher/TeacherDashboard.vue'),
+    component: () => import('@/views/teacher/TeacherDashboard.vue'),
     redirect: '/teacher/students',
     children: [
       {
         path: 'students',
         name: 'StudentManagement',
-        component: () => import('../views/teacher/StudentManagement.vue'),
+        component: () => import('@/views/teacher/StudentManagement.vue'),
         meta: { title: '学生管理' }
-      },
-      {
-        path: 'courses/:courseId/students',
-        name: 'CourseStudents',
-        component: () => import('../views/teacher/CourseStudents.vue'),
-        meta: { title: '课程学生列表' }
       },
       {
         path: 'courses',
         name: 'CourseManagement',
-        component: () => import('../views/teacher/CourseManagement.vue')
+        component: () => import('@/views/teacher/CourseManagement.vue'),
+        meta: { title: '课程管理' }
       },
       {
-        path: 'courses/:id',
-        name: 'CourseDetail',
-        component: () => import('../views/shared/CourseDetail.vue'),
-        props: true
+        path: 'courses/:courseId/students',
+        name: 'CourseStudents',
+        component: () => import('@/views/teacher/CourseStudents.vue'),
+        meta: { title: '课程学生列表' }
       },
-      // 添加任务路由
-      {
-        path: 'tasks/add',
-        name: 'AddTask',
-        component: () => import('../views/teacher/AddTask.vue')
-      },
-
-      // 任务管理页面
       {
         path: 'tasks',
         name: 'TaskManagement',
-        component: () => import('../views/teacher/TaskManagement.vue')
+        component: () => import('@/views/teacher/TaskManagement.vue')
       },
-
-      // 任务详情页面
+      {
+        path: 'tasks/add',
+        name: 'AddTask',
+        component: () => import('@/views/teacher/AddTask.vue')
+      },
       {
         path: 'tasks/:id',
         name: 'TaskDetail',
-        component: () => import('../views/teacher/TaskDetail.vue'),
-        props: true
-      },
-      {
-        path: 'grades',
-        name: 'GradeManagement',
-        component: () => import('../views/teacher/GradeManagement.vue')
-      },
-      {
-        path: 'resources/:courseId',
-        name: 'ResourceManagement',
-        component: () => import('../views/teacher/ResourceManagement.vue'),
+        component: () => import('@/views/teacher/TaskDetail.vue'),
         props: true
       },
       {
         path: 'tasks/generate/:id',
         name: 'GenerateExam',
-        component: () => import('../views/teacher/GenerateExam.vue')
+        component: () => import('@/views/teacher/GenerateExam.vue')
       },
       {
-        path: '/teacher/courses/:courseId/knowledge-points',
+        path: 'grades',
+        name: 'GradeManagement',
+        component: () => import('@/views/teacher/GradeManagement.vue')
+      },
+      {
+        path: 'resources/:courseId',
+        name: 'ResourceManagement',
+        component: () => import('@/views/teacher/ResourceManagement.vue'),
+        props: true
+      },
+      {
+        path: 'courses/:courseId/knowledge-points',
         name: 'KnowledgePointManagement',
         component: () => import('@/views/teacher/KnowledgePointManagement.vue'),
         props: true
@@ -121,57 +111,59 @@ const routes = [
   /* ---------- 学生端 ---------- */
   {
     path: '/student',
-    component: () => import('../views/student/StudentDashboard.vue'),
+    component: () => import('@/views/student/StudentDashboard.vue'),
     redirect: '/student/courses',
     children: [
       {
         path: 'courses',
         name: 'StudentCourses',
-        component: () => import('../views/student/StudentCourses.vue')
-      },
-      {
-        path: '/course-detail/:id',
-        name: 'CourseDetail',
-        component: () => import('@/views/shared/CourseDetail.vue')
-      },
-      {
-        path: 'courses/:id',
-        name: 'StudentCourseDetail',
-        component: () => import('../views/shared/CourseDetail.vue'),
-        props: true
+        component: () => import('@/views/student/StudentCourses.vue')
       },
       {
         path: 'homework',
         name: 'StudentHomework',
-        component: () => import('../views/student/Homework.vue')
+        component: () => import('@/views/student/Homework.vue')
       },
       {
         path: 'homework/:id',
         name: 'StudentTaskDetail',
-        component: () => import('../views/shared/TaskDetail.vue'),
+        component: () => import('@/views/shared/TaskDetail.vue'),
         props: true
       },
       {
         path: 'homework/:id/submit',
         name: 'TaskSubmission',
-        component: () => import('../views/student/TaskSubmission.vue'),
+        component: () => import('@/views/student/TaskSubmission.vue'),
         props: true
       },
       {
         path: 'grades',
         name: 'StudentGrades',
-        component: () => import('../views/student/Grades.vue')
+        component: () => import('@/views/student/Grades.vue')
       },
       {
         path: 'performance',
         name: 'PerformanceDashboard',
-        component: () => import('../views/student/PerformanceDashboard.vue')
+        component: () => import('@/views/student/PerformanceDashboard.vue')
       },
       {
-        path: '/student/resources',
+        path: 'resources',
         name: 'StudentResources',
-        component: () => import('../views/student/StudentResources.vue'),
+        component: () => import('@/views/student/StudentResources.vue'),
         meta: { requiresAuth: true, roles: ['STUDENT'], title: '我的资源' }
+      }
+    ]
+  },
+
+  /* ---------- 公共课程详情（统一教师+学生） ---------- */
+  {
+    path: '/course/:id/detail',
+    component: () => import('@/views/shared/CourseDetailDashboard.vue'),
+    children: [
+      {
+        path: '',
+        name: 'CourseDetail',
+        component: () => import('@/views/shared/CourseDetail.vue')
       }
     ]
   },
@@ -180,14 +172,13 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: () => import('../views/NotFound.vue')
+    component: () => import('@/views/NotFound.vue')
   }
-];
+]
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
-});
+})
 
-
-export default router;
+export default router
