@@ -205,24 +205,60 @@ export default {
         const link = document.createElement('a')
         link.href = url
         
-        // 处理文件名
-        let fileName = resource.name || `resource_${resource.resourceId}`
+        // 处理文件名 - 优先使用响应头中的文件名
+        let fileName = `resource_${resource.resourceId}`
         
-        // 尝试从响应头获取文件名
+        // 首先尝试从响应头获取文件名
         const contentDisposition = response.headers && response.headers['content-disposition']
-        if (contentDisposition && contentDisposition.includes('filename=')) {
-          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-          if (match && match[1]) {
-            fileName = match[1].replace(/['"]/g, '')
+        if (contentDisposition) {
+          // 处理 UTF-8 编码的文件名
+          const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/)
+          if (utf8Match) {
+            fileName = decodeURIComponent(utf8Match[1])
+          } else {
+            // 处理普通文件名
+            const normalMatch = contentDisposition.match(/filename="?([^";\n]+)"?/)
+            if (normalMatch) {
+              fileName = normalMatch[1]
+            }
           }
         }
         
-        // 确保文件有扩展名
-        if (!fileName.includes('.')) {
-          const extension = resource.type?.toLowerCase() || 
-                          resource.url?.split('.').pop() || 
-                          'pdf'
-          fileName = `${fileName}.${extension}`
+        // 如果响应头没有文件名，使用资源名称
+        if (!fileName || fileName === `resource_${resource.resourceId}`) {
+          fileName = resource.name || `resource_${resource.resourceId}`
+          
+          // 根据资源类型添加合适的扩展名
+          if (!fileName.includes('.')) {
+            let extension = 'pdf' // 默认扩展名
+            
+            switch (resource.type?.toUpperCase()) {
+              case 'VIDEO':
+                extension = 'mp4'
+                break
+              case 'DOCUMENT':
+                extension = 'doc'
+                break
+              case 'PDF':
+                extension = 'pdf'
+                break
+              case 'PPT':
+                extension = 'ppt'
+                break
+              case 'IMAGE':
+                extension = 'jpg'
+                break
+              default:
+                // 尝试从原始URL或其他字段获取扩展名
+                if (resource.url) {
+                  const urlExt = resource.url.split('.').pop()
+                  if (urlExt && urlExt.length <= 4) {
+                    extension = urlExt
+                  }
+                }
+            }
+            fileName = `${fileName}.${extension}`
+          }
         }
         
         link.setAttribute('download', fileName)
