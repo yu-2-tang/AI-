@@ -1,7 +1,6 @@
 <template>
   <div class="generate-exam">
     <h2>生成试卷</h2>
-    <p>任务编号: {{ taskCode }}</p>
 
     <!-- 组卷方式 -->
     <div class="form-group">
@@ -98,7 +97,6 @@ export default {
       },
       generatedQuestions: [],
       courseId: '',
-      taskCode: ''
     };
   },
   async mounted() {

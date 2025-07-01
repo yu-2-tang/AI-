@@ -339,13 +339,14 @@ export default {
     },
     viewResource(resource) {
   if (resource.type === 'VIDEO') {
-    // 跳转到视频播放页
     this.$router.push({ name: 'VideoPlayer', params: { resourceId: resource.resourceId } });
+  } else if (['PDF', 'DOCUMENT', 'PPT', 'IMAGE'].includes(resource.type)) {
+    this.$router.push({ name: 'ResourcePreview', params: { resourceId: resource.resourceId } });
   } else {
-    // 非视频资源，保留默认行为或扩展 PDF/PPT 阅读逻辑
     alert(`暂不支持预览该资源类型: ${resource.type}`);
   }
 },
+
 
     changePage(page) {
       this.currentPage = page;

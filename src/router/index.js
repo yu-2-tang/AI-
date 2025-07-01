@@ -177,6 +177,13 @@ const routes = [
   component: () => import('@/views/shared/VideoPlayer.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/preview/:resourceId',
+  name: 'ResourcePreview',
+  component: () => import('@/views/shared/ResourcePreview.vue'),
+  props:true
+},
+
 
   /* ---------- 404 ---------- */
   {
