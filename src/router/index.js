@@ -74,10 +74,11 @@ const routes = [
         component: () => import('@/views/teacher/TaskManagement.vue')
       },
       {
-        path: 'tasks/add',
-        name: 'AddTask',
-        component: () => import('@/views/teacher/AddTask.vue')
-      },
+  path: 'courses/:courseId/add-task',
+  name: 'AddTask',
+  component: () => import('@/views/teacher/AddTask.vue')
+},
+
       {
         path: 'tasks/:id',
         name: 'TaskDetail',
@@ -85,10 +86,11 @@ const routes = [
         props: true
       },
       {
-        path: 'tasks/generate/:id',
-        name: 'GenerateExam',
-        component: () => import('@/views/teacher/GenerateExam.vue')
-      },
+  path: 'courses/:courseId/generate-exam',
+  name: 'GenerateExam',
+  component: () => import('@/views/teacher/GenerateExam.vue')
+},
+
       {
         path: 'grades',
         name: 'GradeManagement',
@@ -105,7 +107,13 @@ const routes = [
         name: 'KnowledgePointManagement',
         component: () => import('@/views/teacher/KnowledgePointManagement.vue'),
         props: true
-      }
+      },
+      {
+  path: '/teacher/tasks/:id/preview-exam',
+  name: 'PreviewExam',
+  component: () => import('@/views/teacher/PreviewExam.vue')
+}
+
     ]
   },
 
@@ -125,12 +133,6 @@ const routes = [
         path: 'homework',
         name: 'StudentHomework',
         component: () => import('@/views/student/Homework.vue')
-      },
-      {
-        path: 'homework/:id',
-        name: 'StudentTaskDetail',
-        component: () => import('@/views/shared/TaskDetail.vue'),
-        props: true
       },
       {
         path: 'homework/:id/submit',
