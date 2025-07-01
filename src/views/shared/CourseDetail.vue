@@ -55,7 +55,8 @@
 </template>
 
 <script>
-import axios from '@/axios'
+import api from '@/axios'
+import axios from 'axios'
 import * as echarts from 'echarts'
 
 export default {
@@ -89,7 +90,7 @@ export default {
 
     async fetchCourseDetail() {
       try {
-        const res = await axios.get(this.getDetailUrl())
+        const res = await api.get(this.getDetailUrl())
         this.course = res.data || {}
       } catch (err) {
         console.error('获取课程详情失败', err)
@@ -99,7 +100,7 @@ export default {
     async renderKnowledgeGraph() {
       try {
          // 增加超时时间
-        const res = await axios.get(this.getGraphUrl(), {
+        const res = await api.get(this.getGraphUrl(), {
           timeout: 30000 // 增加到30秒
         })
         
@@ -211,7 +212,7 @@ export default {
     },
     async fetchResources() {
       try {
-        const res = await axios.get(this.getResourceUrl(), {
+        const res = await api.get(this.getResourceUrl(), {
           params: { page: 1, size: 100 }
         })
         this.resources = res.data?.content || []
@@ -222,23 +223,113 @@ export default {
     },
     async downloadResource(resource) {
       try {
-        const role = this.getRole()
+        // 根据用户角色确定下载URL路径
+        const role = this.getRole()      
         const downloadUrl = role === 'TEACHER'
           ? `/teacher/resources/${resource.resourceId}/download`
           : `/student/resources/${resource.resourceId}/download`
         
-        const response = await axios.get(downloadUrl, { responseType: 'blob' })
+        // 使用原生axios避免响应拦截器影响
+        const token = localStorage.getItem('token')
+        const fullUrl = `http://localhost:8082/api${downloadUrl}`
+        
+        const response = await axios.get(fullUrl, { 
+          responseType: 'blob',
+          timeout: 30000,
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : undefined
+          }
+        })
 
+        // 检查响应是否成功
+        if (!response || !response.data) {
+          throw new Error('服务器响应异常，未获取到文件数据')
+        }
+        
+        if (response.status && response.status !== 200) {
+          throw new Error(`下载失败，状态码: ${response.status}`)
+        }
+
+        // 检查响应数据是否为有效的blob
+        if (response.data.size === 0) {
+          throw new Error('下载的文件大小为0，可能文件不存在或已损坏')
+        }
+
+        // 创建下载链接
         const url = window.URL.createObjectURL(new Blob([response.data]))
         const link = document.createElement('a')
         link.href = url
-        link.setAttribute('download', `${resource.name}.${resource.url?.split('.').pop() || 'pdf'}`)
+        
+        // 处理文件名
+        let fileName = resource.name || `resource_${resource.resourceId}`
+        
+        // 尝试从响应头获取文件名
+        const contentDisposition = response.headers && response.headers['content-disposition']
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+          if (match && match[1]) {
+            fileName = match[1].replace(/['"]/g, '')
+          }
+        }
+        
+        // 确保文件有扩展名
+        if (!fileName.includes('.')) {
+          const extension = resource.type?.toLowerCase() || 
+                          resource.url?.split('.').pop() || 
+                          'pdf'
+          fileName = `${fileName}.${extension}`
+        }
+        
+        link.setAttribute('download', fileName)
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        
+        // 释放内存
+        window.URL.revokeObjectURL(url)
+        
       } catch (err) {
-        console.error('下载失败', err)
-        alert('下载失败')
+        console.error('下载失败:', err)
+        
+        // 提供错误信息
+        let errorMessage = '下载失败'
+        
+        if (err.response) {
+          const status = err.response.status
+          
+          switch (status) {
+            case 404:
+              errorMessage = '资源文件不存在'
+              break
+            case 410:
+              errorMessage = '资源文件已被删除'
+              break
+            case 403:
+              errorMessage = '没有权限下载此资源'
+              break
+            case 401:
+              errorMessage = '登录已过期，请重新登录'
+              break
+            case 500:
+              errorMessage = '服务器内部错误'
+              break
+            default:
+              errorMessage = `下载失败 (错误码: ${status})`
+          }
+        } else if (err.code === 'ECONNABORTED') {
+          errorMessage = '下载超时，请重试'
+        } else if (err.message) {
+          errorMessage = `下载失败: ${err.message}`
+        }
+        
+        alert(errorMessage)
+        
+        // 如果是权限问题，跳转到登录页
+        if (err.response && err.response.status === 401) {
+          setTimeout(() => {
+            this.$router.push('/login')
+          }, 2000)
+        }
       }
     },
     viewResource(resource) {
