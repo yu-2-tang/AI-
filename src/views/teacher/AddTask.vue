@@ -86,6 +86,7 @@ export default {
       generatedExam: null // 新增字段：存储预生成的试卷数据
     };
   },
+
   methods: {
     /**
  * 将日期转换为后端要求的 ISO 8601 格式（带 T 分隔符）
