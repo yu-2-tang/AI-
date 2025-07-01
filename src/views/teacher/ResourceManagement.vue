@@ -80,7 +80,8 @@
 </template>
 
 <script>
-import axios from '@/axios';
+import api from '@/axios'
+import axios from 'axios'
 
 export default {
   name: 'ResourceManagement',
@@ -106,7 +107,7 @@ export default {
   methods: {
     async fetchCourseInfo() {
       try {
-        const res = await axios.get(`/teacher/courses/${this.courseId}`);
+        const res = await api.get(`/teacher/courses/${this.courseId}`);
         this.courseName = res.data.name;
       } catch (err) {
         console.error('获取课程信息失败', err);
@@ -114,7 +115,7 @@ export default {
     },
     async fetchResources() {
       try {
-        const res = await axios.get(`/teacher/courses/${this.courseId}/resources`, {
+        const res = await api.get(`/teacher/courses/${this.courseId}/resources`, {
           params: { page: this.currentPage, size: this.pageSize }
         });
         this.resources = res.data.content || [];
@@ -126,7 +127,7 @@ export default {
     },
     async fetchKnowledgePoints() {
       try {
-        const res = await axios.get(`/teacher/courses/${this.courseId}/knowledge-points`);
+        const res = await api.get(`/teacher/courses/${this.courseId}/knowledge-points`);
         this.knowledgePoints = res.data || [];
       } catch (err) {
         console.error('获取知识点失败', err);
@@ -148,7 +149,7 @@ export default {
       formData.append('knowledgePointId', this.uploadData.knowledgePointId);
 
       try {
-        await axios.post(
+        await api.post(
           `/teacher/courses/${this.courseId}/resources`, 
           formData,
           { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -172,44 +173,115 @@ export default {
       this.$refs.fileInput.value = '';
     },
     async downloadResource(resource) {
-  try {
-    const response = await axios.get(
-      `/teacher/resources/${resource.resourceId}/download`,
-      { responseType: 'blob' }
-    );
+      try {
+        // 使用原生axios避免响应拦截器影响
+        const token = localStorage.getItem('token')
+        const fullUrl = `http://localhost:8082/api/teacher/resources/${resource.resourceId}/download`
+        
+        const response = await axios.get(fullUrl, { 
+          responseType: 'blob',
+          timeout: 30000,
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : undefined
+          }
+        })
 
-    const contentDisposition = response.headers['content-disposition'];
-    let filename = '下载文件';
+        // 检查响应是否成功
+        if (!response || !response.data) {
+          throw new Error('服务器响应异常，未获取到文件数据')
+        }
+        
+        if (response.status && response.status !== 200) {
+          throw new Error(`下载失败，状态码: ${response.status}`)
+        }
 
-    // 从响应头中提取文件名
-    if (contentDisposition) {
-      const fileNameMatch = contentDisposition.match(/filename\*?=UTF-8''(.+?)(;|$)/);
-      if (fileNameMatch) {
-        filename = decodeURIComponent(fileNameMatch[1]);
-      } else {
-        const fallbackMatch = contentDisposition.match(/filename="(.+?)"/);
-        if (fallbackMatch) filename = fallbackMatch[1];
+        // 检查响应数据是否为有效的blob
+        if (response.data.size === 0) {
+          throw new Error('下载的文件大小为0，可能文件不存在或已损坏')
+        }
+
+        // 创建下载链接
+        const url = window.URL.createObjectURL(new Blob([response.data]))
+        const link = document.createElement('a')
+        link.href = url
+        
+        // 处理文件名
+        let fileName = resource.name || `resource_${resource.resourceId}`
+        
+        // 尝试从响应头获取文件名
+        const contentDisposition = response.headers && response.headers['content-disposition']
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+          if (match && match[1]) {
+            fileName = match[1].replace(/['"]/g, '')
+          }
+        }
+        
+        // 确保文件有扩展名
+        if (!fileName.includes('.')) {
+          const extension = resource.type?.toLowerCase() || 
+                          resource.url?.split('.').pop() || 
+                          'pdf'
+          fileName = `${fileName}.${extension}`
+        }
+        
+        link.setAttribute('download', fileName)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // 释放内存
+        window.URL.revokeObjectURL(url)
+        
+      } catch (err) {
+        console.error('下载失败:', err)
+        
+        // 提供错误信息
+        let errorMessage = '下载失败'
+        
+        if (err.response) {
+          const status = err.response.status
+          
+          switch (status) {
+            case 404:
+              errorMessage = '资源文件不存在'
+              break
+            case 410:
+              errorMessage = '资源文件已被删除'
+              break
+            case 403:
+              errorMessage = '没有权限下载此资源'
+              break
+            case 401:
+              errorMessage = '登录已过期，请重新登录'
+              break
+            case 500:
+              errorMessage = '服务器内部错误'
+              break
+            default:
+              errorMessage = `下载失败 (错误码: ${status})`
+          }
+        } else if (err.code === 'ECONNABORTED') {
+          errorMessage = '下载超时，请重试'
+        } else if (err.message) {
+          errorMessage = `下载失败: ${err.message}`
+        }
+        
+        alert(errorMessage)
+        
+        // 如果是权限问题，跳转到登录页
+        if (err.response && err.response.status === 401) {
+          setTimeout(() => {
+            this.$router.push('/login')
+          }, 2000)
+        }
       }
-    }
-
-    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (err) {
-    console.error('下载失败', err);
-    alert('下载失败');
-  }
-},
+    },
 
     async deleteResource(resource) {
       if (!confirm(`确定删除资源 "${resource.name}" 吗？`)) return;
       try {
-        await axios.delete(`/teacher/resources/${resource.resourceId}`);
+        await api.delete(`/teacher/resources/${resource.resourceId}`);
         alert('删除成功');
         this.fetchResources();
       } catch (err) {
@@ -221,7 +293,7 @@ export default {
       const newName = prompt('请输入新的资源名称', resource.name);
       if (!newName) return;
       try {
-        await axios.put(`/teacher/resources/${resource.resourceId}`, { name: newName });
+        await api.put(`/teacher/resources/${resource.resourceId}`, { name: newName });
         alert('更新成功');
         this.fetchResources();
       } catch (err) {
