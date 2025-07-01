@@ -301,9 +301,16 @@ export default {
         alert('更新失败');
       }
     },
-    async viewResource(resource) {
-      alert(`查看资源页面，资源ID: ${resource.resourceId}`);
-    },
+    viewResource(resource) {
+  if (resource.type === 'VIDEO') {
+    // 跳转到视频播放页
+    this.$router.push({ name: 'VideoPlayer', params: { resourceId: resource.resourceId } });
+  } else {
+    // 非视频资源，保留默认行为或扩展 PDF/PPT 阅读逻辑
+    alert(`暂不支持预览该资源类型: ${resource.type}`);
+  }
+},
+
     changePage(page) {
       this.currentPage = page;
       this.fetchResources();

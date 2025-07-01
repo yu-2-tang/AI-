@@ -171,6 +171,12 @@ const routes = [
       }
     ]
   },
+  {
+  path: '/video/:resourceId',
+  name: 'VideoPlayer',
+  component: () => import('@/views/shared/VideoPlayer.vue'),
+  meta: { requiresAuth: true }
+},
 
   /* ---------- 404 ---------- */
   {
