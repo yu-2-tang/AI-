@@ -1,129 +1,141 @@
 <template>
-  <div class="task-mgmt">
-    <h2>任务管理</h2>
+  <div class="teacher-tasks">
+    <h2>我的课程及任务</h2>
 
-    <div class="action-bar">
-      <button class="btn primary-btn" @click="addTask">发布任务</button>
+    <div v-for="course in courses" :key="course.courseId" class="course-card">
+      <h3>{{ course.name }} ({{ course.courseCode }})</h3>
+      <p>学期: {{ course.semester }}</p>
+
+      <button class="primary-btn" @click="goToAddTask(course.courseId)">发布任务</button>
+
+      <div v-if="course.tasks.length">
+        <h4>已发布任务</h4>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>任务名称</th>
+              <th>类型</th>
+              <th>截止时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="task in course.tasks" :key="task.taskId">
+              <td>{{ task.title }}</td>
+              <td>{{ task.type }}</td>
+              <td>{{ task.deadline }}</td>
+              <td>
+                <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
+                <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else>
+        <p>暂无任务</p>
+      </div>
     </div>
-
-    <table class="task-table">
-      <thead>
-        <tr>
-          <th>任务名称</th>
-          <th>类型</th>
-          <th>截止时间</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="task in tasks" :key="task.id">
-          <td>
-            <!-- 名称按钮 -->
-            <router-link
-              :to="`/teacher/tasks/${task.id}`"
-              class="btn table-btn"
-            >
-              {{ task.title }}
-            </router-link>
-          </td>
-          <td>{{ task.type }}</td>
-          <td>{{ task.deadline }}</td>
-          <td>
-            <button class="btn outline-btn" @click="viewTask(task.id)">查看</button>
-            <button class="btn primary-btn" @click="editTask(task.id)">编辑</button>
-            <button class="btn danger-btn" @click="deleteTask(task.id)">删除</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
 <script>
+import axios from '@/axios'
+
 export default {
-  name: 'TaskManagement',
+  name: 'TeacherTaskManagement',
   data() {
     return {
-      tasks: [
-        { id: 1, title: '第一章作业', type: '章节作业', deadline: '2025-06-30' },
-        { id: 2, title: '期中测试',   type: '试卷答题', deadline: '2025-07-15' }
-      ]
+      courses: []
     }
   },
   methods: {
-    addTask() {
-      this.$router.push({ name: 'AddTask' });  // 跳转到新建任务界面
+    async fetchCoursesAndTasks() {
+      try {
+        const res = await axios.get('/teacher/courses')
+        const courses = res.data || []
+
+        // 为每门课程加载任务
+        const courseTasksPromises = courses.map(async course => {
+          const taskRes = await axios.get(`/teacher/courses/${course.courseId}/tasks`)
+          return {
+            ...course,
+            tasks: taskRes.data || []
+          }
+        })
+
+        this.courses = await Promise.all(courseTasksPromises)
+      } catch (err) {
+        console.error('加载课程或任务失败', err)
+        alert(err.response?.data?.message || '加载失败')
+      }
     },
-    viewTask(id) {
-      this.$router.push({ name: 'TaskDetail', params: { id } });
+    goToAddTask(courseId) {
+      this.$router.push({ name: 'AddTask', params: { courseId } })
     },
-    editTask(id) {
-      this.$router.push({ name: 'EditTask', params: { id } });
+    viewTask(taskId) {
+      this.$router.push({ name: 'TaskDetail', params: { id: taskId } })
     },
-    deleteTask(id) {
-      if (confirm('确认删除此任务吗？')) {
-        this.tasks = this.tasks.filter(task => task.id !== id);
+    async deleteTask(courseId, taskId) {
+      if (!confirm('确定要删除这个任务吗？')) return
+      try {
+        await axios.delete(`/teacher/tasks/${taskId}`)
+        alert('任务删除成功')
+        this.fetchCoursesAndTasks()
+      } catch (err) {
+        console.error('任务删除失败', err)
+        alert(err.response?.data?.message || '删除失败')
       }
     }
+  },
+  mounted() {
+    this.fetchCoursesAndTasks()
   }
 }
 </script>
 
 <style scoped>
-.task-mgmt {
+.teacher-tasks {
   padding: 20px;
 }
-.action-bar {
-  margin-bottom: 15px;
+.course-card {
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+.primary-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
 }
 .task-table {
   width: 100%;
   border-collapse: collapse;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .task-table th, .task-table td {
   border: 1px solid #eee;
-  padding: 10px;
-  text-align: left;
+  padding: 8px;
 }
-.btn {
+.danger-btn {
+  background: #e74c3c;
+  color: white;
   border: none;
+  padding: 4px 8px;
   border-radius: 4px;
-  padding: 4px 12px;
-  font-size: 13px;
   cursor: pointer;
-  transition: .25s;
-}
-.table-btn {
-  background: #4a90e2;
-  color: #fff;
-}
-.table-btn:hover {
-  opacity: .9;
 }
 .outline-btn {
   background: transparent;
-  border: 1px solid #4a90e2;
-  color: #4a90e2;
-}
-.outline-btn:hover {
-  background: rgba(74, 144, 226, .1);
-}
-.primary-btn {
-  background: #4a90e2;
-  color: white;
-}
-.primary-btn:hover {
-  opacity: .9;
-}
-.danger-btn {
-  background: #f56c6c;
-  color: white;
-}
-.danger-btn:hover {
-  opacity: .9;
-}
-.task-table td button {
-  margin-right: 6px;
+  border: 1px solid #3498db;
+  color: #3498db;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>

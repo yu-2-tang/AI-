@@ -171,40 +171,59 @@ export default {
       };
       this.$refs.fileInput.value = '';
     },
-    async downloadResource(resource) {
+async downloadResource(resourceId) {
   try {
-    const response = await axios.get(
-      `/teacher/resources/${resource.resourceId}/download`,
-      { responseType: 'blob' }
-    );
-
-    const contentDisposition = response.headers['content-disposition'];
-    let filename = '下载文件';
-
-    // 从响应头中提取文件名
-    if (contentDisposition) {
-      const fileNameMatch = contentDisposition.match(/filename\*?=UTF-8''(.+?)(;|$)/);
-      if (fileNameMatch) {
-        filename = decodeURIComponent(fileNameMatch[1]);
+    // 🛡️ 提取 resourceId
+    if (typeof resourceId !== 'string') {
+      if (resourceId && typeof resourceId.resourceId === 'string') {
+        console.warn('传入对象，提取 resourceId');
+        resourceId = resourceId.resourceId;
       } else {
-        const fallbackMatch = contentDisposition.match(/filename="(.+?)"/);
-        if (fallbackMatch) filename = fallbackMatch[1];
+        throw new Error(`无效的资源ID参数: ${JSON.stringify(resourceId)}`);
       }
     }
 
-    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
+    // 🛡️ 获取 Token
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('未登录或Token丢失');
+    }
+
+    // 🛰️ 请求下载
+    const url = `/api/teacher/resources/${encodeURIComponent(resourceId)}/download`;
+    console.log('下载 URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`下载失败，状态码: ${response.status}`);
+    }
+
+    // 📄 下载处理
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('Content-Disposition') || '';
+    let filename = 'downloaded_file';
+    const match = contentDisposition.match(/filename="?([^"]+)"?/);
+    if (match) filename = decodeURIComponent(match[1]);
+
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+    console.log(`下载成功: ${filename}`);
   } catch (err) {
-    console.error('下载失败', err);
-    alert('下载失败');
+    console.error('下载失败:', err);
+    alert(`下载失败: ${err.message}`);
   }
 },
+
 
     async deleteResource(resource) {
       if (!confirm(`确定删除资源 "${resource.name}" 吗？`)) return;

@@ -118,19 +118,27 @@ export default {
       this.showEditForm = true;
     },
     async updateKnowledgePoint() {
-      try {
-        await axios.put(
-          `/teacher/courses/${this.courseId}/knowledge-points/${this.editKnowledgePointData.pointId}`,
-          this.editKnowledgePointData
-        );
-        alert("更新成功");
-        this.showEditForm = false;
-        this.fetchKnowledgePoints();
-      } catch (err) {
-        console.error("更新失败", err);
-        alert("更新失败");
-      }
-    },
+  try {
+    const payload = {
+      name: this.editKnowledgePointData.name,
+      description: this.editKnowledgePointData.description,
+      courseId: this.courseId // ⚠️ 必须包含
+    };
+
+    await axios.put(
+      `/teacher/knowledge-points/${this.editKnowledgePointData.pointId}`,
+      payload
+    );
+
+    alert("更新成功");
+    this.showEditForm = false;
+    this.fetchKnowledgePoints();
+  } catch (err) {
+    console.error("更新失败", err);
+    alert(err.response?.data?.message || "更新失败");
+  }
+},
+
     async deleteKnowledgePoint(point) {
       if (!confirm(`确认删除知识点 "${point.name}" 吗？`)) return;
       try {
