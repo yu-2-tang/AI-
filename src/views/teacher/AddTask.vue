@@ -74,7 +74,7 @@ export default {
     return {
       task: {
         title: '',
-        type: 'CHAPTER_HOMEWORK',
+        type: 'CHAPTER_Task',
         deadline: '',
         description: '',
         paperId: '' // 新增
