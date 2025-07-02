@@ -369,8 +369,21 @@ export default {
       }
     },
     viewResource(resource) {
-      alert(`预览资源功能尚未实现，资源ID: ${resource.resourceId}`)
-    },
+  const resourceId = resource.resourceId;
+
+  switch (resource.type) {
+    case 'VIDEO':
+      this.$router.push({ name: 'VideoPlayer', params: { resourceId } });
+      break;
+    case 'PPT':
+    case 'PDF':
+    case 'DOCUMENT':
+      this.$router.push({ name: 'ResourcePreview', params: { resourceId } });
+      break;
+    default:
+      alert(`暂不支持预览资源类型: ${resource.type}`);
+  }
+},
     formatDate(dateStr) {
       return new Date(dateStr).toLocaleString()
     },

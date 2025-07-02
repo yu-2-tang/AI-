@@ -1,7 +1,7 @@
+<!-- StudentResources.vue -->
 <template>
   <div class="student-resources">
     <h2>我的学习资源</h2>
-
     <div v-if="courses.length === 0">暂无选课</div>
 
     <div v-for="course in courses" :key="course.courseId" class="course-section">
@@ -9,19 +9,24 @@
 
       <div v-if="course.resources && course.resources.length">
         <div class="resource-list">
-          <div class="resource-card" v-for="res in course.resources" :key="res.id">
+          <div class="resource-card" v-for="res in course.resources" :key="res.resourceId">
             <h4>{{ res.name }}</h4>
-            <p>类型：{{ res.type }}</p>
+            <p>类型：{{ formatResourceType(res.type) }}</p>
             <p>上传人：{{ res.uploader }}</p>
             <p>上传时间：{{ formatDate(res.uploadTime) }}</p>
-
-            <div v-if="res.type === 'VIDEO'">
-              <video width="100%" controls @timeupdate="updateProgress(res, $event)">
-                <source :src="res.url" type="video/mp4" />
-                您的浏览器不支持 video 标签。
-              </video>
+            <div class="resource-actions">
+              <router-link
+                v-if="res.type !== 'VIDEO'"
+                :to="{ name: 'ResourcePreview', params: { resourceId: res.resourceId } }"
+                class="primary-btn"
+              >查看</router-link>
+              <router-link
+                v-else
+                :to="{ name: 'VideoPlayer', params: { resourceId: res.resourceId } }"
+                class="primary-btn"
+              >查看</router-link>
+              <button @click="downloadResource(res)" class="primary-btn">下载</button>
             </div>
-            <a v-else :href="res.url" download target="_blank" class="btn primary-btn">下载资源</a>
           </div>
         </div>
       </div>
@@ -45,19 +50,16 @@ export default {
   methods: {
     async fetchCoursesAndResources() {
       try {
-        // 获取已选课程
         const courseRes = await axios.get('/student/courses', { params: { page: 1, size: 100 } });
         const courseList = courseRes.content || [];
 
-        // 为每门课程拉取资源
         const courseWithResources = await Promise.all(
           courseList.map(async (course) => {
             try {
-             const res = await axios.get(`/student/courses/${course.courseId}/resources`, {
-              params: { page: 1, size: 100 }
-          });
+              const res = await axios.get(`/student/courses/${course.courseId}/resources`, {
+                params: { page: 1, size: 100 }
+              });
               course.resources = res.data?.content || [];
-
             } catch (err) {
               console.error(`获取课程 ${course.name} 的资源失败`, err);
               course.resources = [];
@@ -72,14 +74,56 @@ export default {
         alert('加载课程失败');
       }
     },
-    updateProgress(resource, event) {
-      const current = Math.floor(event.target.currentTime);
-      const total = Math.floor(event.target.duration);
-      console.log(`资源 ${resource.name} 学习进度：${current} / ${total}`);
+    async downloadResource(resource) {
+      try {
+        const token = localStorage.getItem('token')
+        const url = `http://localhost:8082/api/student/resources/${resource.resourceId}/download`
+        const response = await axios.get(url, {
+          responseType: 'blob',
+          timeout: 30000,
+          headers: { Authorization: token ? `Bearer ${token}` : undefined }
+        });
+
+        if (!response || !response.data || response.data.size === 0) {
+          throw new Error('服务器返回空文件或下载失败')
+        }
+
+        let fileName = resource.name || `resource_${resource.resourceId}`
+        const disposition = response.headers['content-disposition']
+        if (disposition) {
+          const match = disposition.match(/filename\*=UTF-8''([^;]+)/)
+          if (match) fileName = decodeURIComponent(match[1])
+        }
+        if (!fileName.includes('.')) {
+          const extMap = { 'PDF': 'pdf', 'PPT': 'ppt', 'DOCUMENT': 'docx', 'VIDEO': 'mp4', 'IMAGE': 'jpg' }
+          fileName += `.${extMap[resource.type?.toUpperCase()] || 'bin'}`
+        }
+
+        const urlBlob = window.URL.createObjectURL(new Blob([response.data]))
+        const link = document.createElement('a')
+        link.href = urlBlob
+        link.setAttribute('download', fileName)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(urlBlob)
+      } catch (err) {
+        console.error('下载失败:', err)
+        alert('资源下载失败')
+      }
     },
     formatDate(dateStr) {
       const d = new Date(dateStr);
       return d.toLocaleString();
+    },
+    formatResourceType(type) {
+      const typeMap = {
+        'PDF': 'PDF文档',
+        'PPT': 'PPT课件',
+        'VIDEO': '视频',
+        'DOCUMENT': '文档'
+      };
+      return typeMap[type] || type;
     }
   },
   mounted() {
@@ -120,5 +164,10 @@ export default {
 .empty {
   color: #888;
   font-style: italic;
+}
+.resource-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
 }
 </style>

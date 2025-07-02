@@ -13,5 +13,5 @@
   },
 
   /* 包含哪些文件纳入分析 */
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src/views/student/TaskDetail.vue"]
 }

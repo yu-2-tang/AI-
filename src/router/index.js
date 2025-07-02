@@ -81,7 +81,7 @@ const routes = [
       {
         path: 'tasks/:id',
         name: 'TaskDetail',
-        component: () => import('@/views/teacher/TaskDetail.vue'),
+        component: () => import('../views/student/TaskDetail.vue'),
         props: true
       },
       {
@@ -149,6 +149,7 @@ const routes = [
       }
     ]
   },
+  
 
   /* ---------- 公共课程详情 ---------- */
   {
@@ -181,6 +182,12 @@ const routes = [
   props:true,
   meta: { requiresAuth: true }
 },
+{
+  path: '/student/exam/:taskId',
+  name: 'AnswerExam',
+  component: () => import('@/views/student/AnswerExam.vue')
+},
+
 
 
   /* ---------- 404 ---------- */

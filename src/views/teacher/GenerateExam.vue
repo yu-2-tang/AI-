@@ -1,7 +1,6 @@
 <template>
   <div class="generate-exam">
     <h2>生成试卷</h2>
-    <p>任务编号: {{ taskCode }}</p>
     <p>题库ID: {{ questionBankId || '正在获取...' }}</p>
     
     <div class="info-box">
@@ -101,7 +100,6 @@ export default {
       },
       generatedQuestions: [],
       courseId: '',
-      taskCode: '',
       questionBankId: '',
       generating: false
     };
@@ -183,29 +181,46 @@ export default {
       this.examDetails.totalCount = Math.min(count, 15);
     },
     async generateExam() {
-      if (!this.questionBankId || this.questionBankId.trim() === '') {
-        alert('题库ID缺失，请刷新页面重试');
-        return;
-      }
+  if (!this.questionBankId || this.questionBankId.trim() === '') {
+    alert('题库ID缺失，请刷新页面重试');
+    return;
+  }
+
+  if (this.examDetails.totalCount < 0 || this.examDetails.essayCount < 0) {
+    alert('题目数量不能为负数');
+    return;
+  }
+
+  if (this.examDetails.totalCount === 0 && this.examDetails.essayCount === 0) {
+    alert('客观题和主观题数量不能都为0');
+    return;
+  }
+
 
       const payload = {
-        courseId: this.courseId,
-        bankId: this.questionBankId,
-        mode: this.examDetails.mode,
-        totalCount: this.examDetails.totalCount,
-        essayCount: this.examDetails.essayCount,
-        paperName: this.taskCode, // 添加试卷名称
-      };
+  courseId: this.courseId,
+  bankId: this.questionBankId,
+  mode: this.examDetails.mode,
+  totalCount: this.examDetails.totalCount + this.examDetails.essayCount,
+  essayCount: this.examDetails.essayCount,
+  paperName: this.taskCode
+};
+
 
       if (this.examDetails.mode === 'difficulty') {
         payload.difficultyDistribution = this.examDetails.difficulty;
       }
       if (this.examDetails.mode === 'knowledge') {
-        if (this.examDetails.knowledgePointIds.length === 0) {
-          return alert('请选择知识点');
-        }
-        payload.knowledgePointIds = this.examDetails.knowledgePointIds;
-      }
+  if (this.examDetails.knowledgePointIds.length === 0) {
+    return alert('请选择知识点');
+  }
+
+  // 把选择的 ID 转成名字
+  payload.knowledgePointIds = this.knowledgePoints
+    .filter(kp => this.examDetails.knowledgePointIds.includes(kp.id))
+    .map(kp => kp.name);
+}
+
 
       this.generating = true;
       try {

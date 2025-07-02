@@ -53,6 +53,19 @@
         </div>
       </div>
     </div>
+   <!-- 查看知识点详情弹窗 -->
+<div v-if="showViewModal" class="modal-overlay">
+  <div class="modal">
+    <h3>知识点详情</h3>
+    <p><strong>名称：</strong>{{ viewPoint.name }}</p>
+    <p><strong>描述：</strong>{{ viewPoint.description }}</p>
+    <div class="modal-actions">
+      <button class="btn primary-btn" @click="showViewModal = false">关闭</button>
+    </div>
+  </div>
+</div>
+
+
   </div>
 </template>
 
@@ -75,7 +88,13 @@ export default {
         pointId: null,
         name: "",
         description: ""
-      }
+      },
+      showViewModal: false,
+viewPoint: {
+  name: '',
+  description: ''
+}
+
     };
   },
   methods: {
@@ -110,9 +129,16 @@ export default {
         alert("添加失败");
       }
     },
-    viewKnowledgePoint(point) {
-      alert(`查看知识点 ID: ${point.pointId}`);
-    },
+    async viewKnowledgePoint(point) {
+  try {
+    const res = await axios.get(`/teacher/knowledge-points/${point.pointId}`);
+    this.viewPoint = res.data || {};
+    this.showViewModal = true;
+  } catch (err) {
+    console.error("获取知识点详情失败", err);
+    alert("获取知识点详情失败");
+  }
+},
     editKnowledgePoint(point) {
       this.editKnowledgePointData = { ...point };
       this.showEditForm = true;

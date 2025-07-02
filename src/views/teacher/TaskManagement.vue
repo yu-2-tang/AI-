@@ -26,7 +26,14 @@
               <td>{{ task.deadline }}</td>
               <td>
                 <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
-                <button class="outline-btn" @click="downloadTask(task.taskId)">下载</button>
+                <button
+  v-if="task.type !== 'EXAM_QUIZ'"
+  class="outline-btn"
+  @click="downloadTask(task.taskId)"
+>
+  下载
+</button>
+
                 <button class="primary-btn" @click="openEditModal(course.courseId, task.taskId)">编辑</button>
                 <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
               </td>
@@ -113,32 +120,54 @@ export default {
       this.$router.push({ name: 'AddTask', params: { courseId } })
     },
     async viewTask(taskId) {
-      try {
-        const res = await axios.get(`/teacher/tasks/${taskId}`);
-        const task = res.data;
-        if (!task.resources || task.resources.length === 0) {
-          alert('该任务没有关联资源');
-          return;
-        }
-        const resource = task.resources[0];
-        const resourceId = resource.resourceId;
-        switch (resource.type) {
-          case 'VIDEO':
-            this.$router.push({ name: 'VideoPlayer', params: { resourceId } });
-            break;
-          case 'PPT':
-          case 'PDF':
-          case 'DOCUMENT':
-            this.$router.push({ name: 'ResourcePreview', params: { resourceId } });
-            break;
-          default:
-            alert(`暂不支持预览资源类型: ${resource.type}`);
-        }
-      } catch (err) {
-        console.error('获取任务详情失败:', err);
-        alert('加载任务资源失败');
+  try {
+    const res = await axios.get(`/teacher/tasks/${taskId}`);
+    const task = res.data;
+
+    // 如果是试卷任务，调用新的 paper 接口获取 paperId
+    if (task.type === 'EXAM_QUIZ') {
+      const paperRes = await axios.get(`/paper/task/${taskId}`);
+      const paper = paperRes?.data;
+
+      if (!paper || !paper.paperId) {
+        alert('未找到绑定的试卷，无法预览');
+        return;
       }
-    },
+
+      // 跳转到试卷预览页
+      this.$router.push({
+        name: 'PreviewExam',
+        params: { id: taskId },
+        query: { paperId: paper.paperId }
+      });
+      return;
+    }
+
+    // 其余类型任务的资源跳转逻辑不变
+    if (!task.resources || task.resources.length === 0) {
+      alert('该任务没有关联资源');
+      return;
+    }
+
+    const resource = task.resources[0];
+    const resourceId = resource.resourceId;
+    switch (resource.type) {
+      case 'VIDEO':
+        this.$router.push({ name: 'VideoPlayer', params: { resourceId } });
+        break;
+      case 'PPT':
+      case 'PDF':
+      case 'DOCUMENT':
+        this.$router.push({ name: 'ResourcePreview', params: { resourceId } });
+        break;
+      default:
+        alert(`暂不支持预览资源类型: ${resource.type}`);
+    }
+  } catch (err) {
+    console.error('获取任务详情失败:', err);
+    alert('加载任务资源失败');
+  }
+},
     async downloadTask(taskId) {
       try {
         const res = await axios.get(`/teacher/tasks/${taskId}`);
