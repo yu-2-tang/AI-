@@ -183,6 +183,13 @@ const routes = [
   component: () => import('@/views/shared/ResourcePreview.vue'),
   props:true
 },
+{
+  path: '/teacher/resources/:resourceId',
+  name: 'TeacherResourcePreview', 
+  component: () => import('@/views/shared/ResourcePreview.vue'),
+  props:true,
+  meta: { requiresAuth: true }
+},
 
 
   /* ---------- 404 ---------- */

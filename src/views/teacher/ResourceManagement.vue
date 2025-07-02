@@ -52,7 +52,7 @@
         <tbody>
           <tr v-for="res in resources" :key="res.resourceId">
             <td>{{ res.name }}</td>
-            <td>{{ res.type }}</td>
+            <td>{{ formatResourceType(res.type) }}</td>
             <td>{{ formatSize(res.size) }}</td>
             <td>{{ formatDate(res.uploadTime) }}</td>
             <td>
@@ -364,6 +364,16 @@ export default {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / 1048576).toFixed(1) + ' MB';
+    },
+    formatResourceType(type) {
+      const typeMap = {
+        'PDF': 'PDF文档',
+        'PPT': 'PPT演示文稿',
+        'VIDEO': '视频',
+        'DOCUMENT': '文档',
+        'IMAGE': '图片'
+      };
+      return typeMap[type] || type;
     }
   },
   mounted() {
