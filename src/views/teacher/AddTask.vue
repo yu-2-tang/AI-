@@ -108,6 +108,7 @@ export default {
       if (this.task.paperId) {
         this.$router.push({
           name: 'PreviewExam',
+          params: { id: this.task.paperId || 'temp-preview' },
           query: { paperId: this.task.paperId }
         });
       } else {

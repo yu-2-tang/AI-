@@ -338,9 +338,14 @@ export default {
       }
     },
     viewResource(resource) {
-  if (resource.type === 'VIDEO') {
+  // 判断是否为视频类型 - 支持多种视频格式标识
+  if (resource.type === 'VIDEO' || 
+      resource.type === 'video' ||
+      resource.type?.toLowerCase().startsWith('video/')) {
     this.$router.push({ name: 'VideoPlayer', params: { resourceId: resource.resourceId } });
-  } else if (['PDF', 'DOCUMENT', 'PPT', 'IMAGE'].includes(resource.type)) {
+  } else if (['PDF', 'DOCUMENT', 'PPT', 'IMAGE'].includes(resource.type) ||
+             resource.type?.toLowerCase().startsWith('application/pdf') ||
+             resource.type?.toLowerCase().startsWith('image/')) {
     this.$router.push({ name: 'ResourcePreview', params: { resourceId: resource.resourceId } });
   } else {
     alert(`暂不支持预览该资源类型: ${resource.type}`);

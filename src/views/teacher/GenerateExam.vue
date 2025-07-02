@@ -60,16 +60,18 @@
       <input type="number" v-model.number="examDetails.essayCount" :max="5" min="0" />
     </div>
 
-    <button class="btn primary-btn" @click="generateExam">生成试卷</button>
+    <button class="btn primary-btn" @click="generateExam" :disabled="generating">
+      {{ generating ? '生成中...' : '生成试卷' }}
+    </button>
     <button class="btn info-btn" @click="checkQuestionBank" style="margin-left: 10px;">检查题库</button>
 
     <div v-if="generatedQuestions.length > 0">
       <h3>预览试卷</h3>
-      <p>组卷方式: {{ examDetails.mode }}</p>
+      <p>组卷方式: {{ getModeText(examDetails.mode) }}</p>
       <p>题目总数: {{ generatedQuestions.length }}</p>
       <ul>
         <li v-for="(q, index) in generatedQuestions" :key="index">
-          <strong>{{ index + 1 }}.</strong> {{ q.content || q.questionId }}
+          <strong>{{ index + 1 }}.</strong> {{ q.content || q.questionId || '题目ID: ' + (q.id || index) }}
         </li>
       </ul>
       <button class="btn secondary-btn" @click="goToPreview">预览所有题目</button>
@@ -100,7 +102,8 @@ export default {
       generatedQuestions: [],
       courseId: '',
       taskCode: '',
-      questionBankId: ''
+      questionBankId: '',
+      generating: false
     };
   },
   async mounted() {
@@ -191,6 +194,7 @@ export default {
         mode: this.examDetails.mode,
         totalCount: this.examDetails.totalCount,
         essayCount: this.examDetails.essayCount,
+        paperName: this.taskCode, // 添加试卷名称
       };
 
       if (this.examDetails.mode === 'difficulty') {
@@ -203,26 +207,33 @@ export default {
         payload.knowledgePointIds = this.examDetails.knowledgePointIds;
       }
 
+      this.generating = true;
       try {
         let res = await api.post('/paper/generate', payload);
-        const questions = res.data?.questions || res.questions || [];
-        const paperId = res.data?.paperId || res.paperId;
+        
+        // 兼容不同的响应格式
+        const responseData = res.data || res;
+        const questions = responseData.questions || [];
+        const paperId = responseData.paperId;
 
         if (!Array.isArray(questions) || questions.length === 0) {
-          return alert('试卷生成失败：未获取到题目数据');
+          throw new Error('未获取到题目数据，可能是题库中题目数量不足');
         }
 
         this.generatedQuestions = questions;
 
+        // 保存到localStorage供后续使用
         localStorage.setItem('generatedExam', JSON.stringify({
           mode: this.examDetails.mode,
           taskCode: this.taskCode,
           questions,
           questionBankId: this.questionBankId,
-          paperId
+          paperId,
+          totalCount: this.examDetails.totalCount,
+          essayCount: this.examDetails.essayCount
         }));
 
-        alert('试卷生成成功，将返回任务编辑页面继续填写');
+        alert('✅ 试卷生成成功，将返回任务编辑页面继续填写任务信息');
         this.$router.push({
           name: 'AddTask',
           params: { courseId: this.courseId },
@@ -230,7 +241,10 @@ export default {
         });
       } catch (err) {
         console.error('试卷生成失败', err);
-        alert(err.response?.data?.message || err.message || '生成失败');
+        const errorMsg = err.response?.data?.message || err.message || '生成失败，请检查参数设置和题库内容';
+        alert('❌ ' + errorMsg);
+      } finally {
+        this.generating = false;
       }
     },
     async checkQuestionBank() {
@@ -240,15 +254,11 @@ export default {
       }
 
       try {
-        console.log('检查题库:', this.questionBankId);
-        
         // 根据后端API路径调用题库信息接口
         const bankInfoRes = await api.get(`/questionBank/${this.questionBankId}/info`);
-        console.log('题库基本信息:', bankInfoRes);
         
         // 获取题库中的题目列表来统计数量
         const questionsRes = await api.get(`/questionBank/${this.questionBankId}/question/list`);
-        console.log('题目列表:', questionsRes);
         
         const questions = questionsRes || [];
         // 根据数据库表结构，题目类型为：SINGLE, MULTIPLE, JUDGE, FILL, SHORT, OTHER
@@ -279,7 +289,6 @@ export default {
         alert(resultMessage);
       } catch (err) {
         console.error('检查题库失败', err);
-        console.error('错误详情:', err.response);
         
         let errorMsg = '无法检查题库信息';
         if (err.response?.status === 404) {
@@ -294,7 +303,37 @@ export default {
       }
     },
     goToPreview() {
-      this.$router.push({ name: 'PreviewExam', params: { courseId: this.courseId } });
+      // 检查是否有生成的试卷数据
+      if (!this.generatedQuestions.length) {
+        alert('请先生成试卷');
+        return;
+      }
+      
+      // 确保localStorage中有数据
+      const examData = localStorage.getItem('generatedExam');
+      if (!examData) {
+        alert('试卷数据丢失，请重新生成');
+        return;
+      }
+      
+      // 跳转到预览页面，使用临时ID和query参数
+      this.$router.push({ 
+        name: 'PreviewExam', 
+        params: { 
+          id: 'temp-preview' // 使用临时ID
+        },
+        query: {
+          fromGenerated: 'true' // 标记来自生成页面
+        }
+      });
+    },
+    getModeText(mode) {
+      const modeMap = {
+        'random': '随机组卷',
+        'difficulty': '按难度组卷',
+        'knowledge': '按知识点组卷'
+      };
+      return modeMap[mode] || mode;
     }
   }
 };
@@ -358,6 +397,11 @@ input, select {
   background: #4a90e2;
   color: #fff;
   border: none;
+  cursor: pointer;
+}
+.primary-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 .info-btn {
   background: #17a2b8;
