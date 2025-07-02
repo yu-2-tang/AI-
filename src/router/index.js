@@ -48,7 +48,7 @@ const routes = [
     path: '/teacher',
     component: () => import('@/views/teacher/TeacherDashboard.vue'),
     redirect: '/teacher/students',
-    meta: { requiresAuth: true, roles: ['TEACHER'] }, // ✅ 添加权限控制
+    meta: { requiresAuth: true, roles: ['TEACHER'] },
     children: [
       {
         path: 'students',
@@ -74,11 +74,10 @@ const routes = [
         component: () => import('@/views/teacher/TaskManagement.vue')
       },
       {
-  path: 'courses/:courseId/add-task',
-  name: 'AddTask',
-  component: () => import('@/views/teacher/AddTask.vue')
-},
-
+        path: 'courses/:courseId/add-task',
+        name: 'AddTask',
+        component: () => import('@/views/teacher/AddTask.vue')
+      },
       {
         path: 'tasks/:id',
         name: 'TaskDetail',
@@ -86,11 +85,10 @@ const routes = [
         props: true
       },
       {
-  path: 'courses/:courseId/generate-exam',
-  name: 'GenerateExam',
-  component: () => import('@/views/teacher/GenerateExam.vue')
-},
-
+        path: 'courses/:courseId/generate-exam',
+        name: 'GenerateExam',
+        component: () => import('@/views/teacher/GenerateExam.vue')
+      },
       {
         path: 'grades',
         name: 'GradeManagement',
@@ -109,11 +107,10 @@ const routes = [
         props: true
       },
       {
-  path: '/teacher/tasks/:id/preview-exam',
-  name: 'PreviewExam',
-  component: () => import('@/views/teacher/PreviewExam.vue')
-}
-
+        path: 'preview-exam/:id?',
+        name: 'PreviewExam',
+        component: () => import('@/views/teacher/PreviewExam.vue')
+      }
     ]
   },
 
@@ -121,7 +118,7 @@ const routes = [
   {
     path: '/student',
     component: () => import('@/views/student/StudentDashboard.vue'),
-    meta: { requiresAuth: true, roles: ['STUDENT'] }, // ✅ 添加权限控制
+    meta: { requiresAuth: true, roles: ['STUDENT'] },
     redirect: '/student/courses',
     children: [
       {
@@ -130,15 +127,9 @@ const routes = [
         component: () => import('@/views/student/StudentCourses.vue')
       },
       {
-        path: 'homework',
-        name: 'StudentHomework',
-        component: () => import('@/views/student/Homework.vue')
-      },
-      {
-        path: 'homework/:id/submit',
-        name: 'TaskSubmission',
-        component: () => import('@/views/student/TaskSubmission.vue'),
-        props: true
+        path: 'tasks',
+        name: 'StudentTask',
+        component: () => import('@/views/student/StudentTask.vue')
       },
       {
         path: 'grades',
@@ -159,7 +150,7 @@ const routes = [
     ]
   },
 
-  /* ---------- 公共课程详情（统一教师+学生） ---------- */
+  /* ---------- 公共课程详情 ---------- */
   {
     path: '/course/:id/detail',
     component: () => import('@/views/shared/CourseDetailDashboard.vue'),
