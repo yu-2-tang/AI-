@@ -1,14 +1,38 @@
 <template>
   <div class="video-player">
     <h2>视频播放 - {{ videoName }}</h2>
+    
     <video
       ref="videoRef"
       controls
       @timeupdate="handleTimeUpdate"
       @ended="handleVideoEnd"
+      @loadstart="handleLoadStart"
+      @loadeddata="handleLoadedData"
+      @error="handleVideoError"
+      @canplay="handleCanPlay"
+      @play="handlePlay"
+      @pause="handlePause"
       width="100%"
       :src="videoUrl"
+      preload="metadata"
+      crossorigin="anonymous"
     ></video>
+    <div v-if="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <p>视频加载中...</p>
+      <p class="loading-details">正在从服务器获取视频流...</p>
+    </div>
+    <div v-if="error" class="error">
+      <h3>❌ 视频加载失败</h3>
+      <p>{{ error }}</p>
+      <div class="error-details">
+        <p><strong>资源ID:</strong> {{ resourceId }}</p>
+        <p><strong>视频URL:</strong> {{ videoUrl }}</p>
+        <button @click="retryLoad" class="retry-button">🔄 重试加载</button>
+        <a :href="`/video-test.html?resourceId=${resourceId}`" target="_blank" class="test-button">🧪 打开测试工具</a>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -27,59 +51,121 @@ export default {
       segments: [],
       segmentStart: 0,
       segmentEnd: 0,
-      loaded: false
+      loaded: false,
+      loading: false,
+      error: null
     };
   },
   async mounted() {
-  await this.fetchVideoUrl();
+    if (!this.resourceId) {
+      this.error = '缺少资源ID参数';
+      return;
+    }
+    
+    await this.fetchVideoUrl();
 
-  try {
-    const res = await api.get(`/api/video-progress/${this.resourceId}`);
-    this.lastPosition = res.data.lastPosition;
-    this.segments = JSON.parse(res.data.heatmapData || '{"segments":[]}').segments || [];
-    this.totalWatched = res.data.totalWatched;
-    this.loaded = true;
+    try {
+      this.loaded = true;
+      this.lastPosition = 0;
+      this.segments = [];
+      this.totalWatched = 0;
 
-    this.$refs.videoRef.currentTime = this.lastPosition;
-    this.segmentStart = this.lastPosition;
-  } catch (err) {
-    console.warn('获取进度失败，可能是新用户');
-    this.loaded = true;
-    this.segmentStart = 0;
-  }
-},
+      this.$nextTick(() => {
+        if (this.$refs.videoRef && this.lastPosition > 0) {
+          this.$refs.videoRef.currentTime = this.lastPosition;
+        }
+        this.setupVideoAuth();
+      });
+      this.segmentStart = this.lastPosition;
+    } catch (err) {
+      this.loaded = true;
+      this.segmentStart = 0;
+    }
+  },
   methods: {
     async fetchVideoUrl() {
       try {
+        if (!this.resourceId || this.resourceId === 'undefined' || this.resourceId === 'null') {
+          this.error = '无效的资源ID，无法加载视频';
+          return;
+        }
+        
         const res = await api.get(`/teacher/resources/${this.resourceId}`);
-        this.videoName = res.data.name;
-        this.videoUrl = res.data.url;
+        
+        let resourceData = res;
+        if (res && res.data && typeof res.data === 'object') {
+          resourceData = res.data;
+        }
+        
+        if (resourceData) {
+          this.videoName = resourceData.name || '未知视频';
+        }
+        
+        const token = localStorage.getItem('token');
+        const baseURL = api.defaults.baseURL || 'http://localhost:8082/api';
+        
+        this.videoUrl = `${baseURL}/teacher/resources/${this.resourceId}/play`;
+        
+        if (token) {
+          this.videoUrl += `?token=${encodeURIComponent(token)}`;
+        }
+        
       } catch (err) {
-        console.error('获取视频信息失败', err);
-        alert('视频加载失败');
+        this.error = '视频加载失败: ' + (err.friendlyMessage || err.message || '未知错误');
       }
     },
-    async loadProgress() {
-      try {
-        const res = await api.get(`/video-progress/${this.resourceId}`);
-        const progress = res.data;
-        this.lastPosition = progress.lastPosition || 0;
-        this.totalWatched = progress.totalWatched || 0;
-        this.segments = JSON.parse(progress.heatmapData || '{"segments":[]}').segments;
-        this.loaded = true;
-
-        this.$refs.videoRef.currentTime = this.lastPosition;
-        this.segmentStart = this.lastPosition;
-      } catch (err) {
-        console.warn('未找到进度记录，将从头开始');
-        this.segmentStart = 0;
-      }
+    
+    handleLoadStart() {
+      this.loading = true;
+      this.error = null;
     },
+    
+    handleLoadedData() {
+      this.loading = false;
+    },
+    
+    handleVideoError(e) {
+      this.loading = false;
+      
+      let errorMessage = '视频加载失败';
+      if (e.target?.error) {
+        switch (e.target.error.code) {
+          case 1:
+            errorMessage = '视频加载被用户中止';
+            break;
+          case 2:
+            errorMessage = '网络错误或认证失败，无法加载视频';
+            break;
+          case 3:
+            errorMessage = '视频解码失败，文件可能损坏或格式不支持';
+            break;
+          case 4:
+            errorMessage = '不支持的视频格式或无法访问视频源';
+            break;
+          default:
+            errorMessage = `视频错误 (代码: ${e.target.error.code})`;
+        }
+      }
+      
+      this.error = errorMessage;
+    },
+    
+    handleCanPlay() {
+      this.loading = false;
+    },
+    
+    handlePlay() {
+      // 视频开始播放
+    },
+    
+    handlePause() {
+      // 视频暂停播放
+    },
+    
     handleTimeUpdate(e) {
       if (!this.loaded) return;
       const current = e.target.currentTime;
 
-      // 只记录每5秒一个段落，防止太频繁写入
       if (current - this.segmentStart >= 5) {
         this.segments.push({
           start: this.segmentStart,
@@ -91,38 +177,25 @@ export default {
 
       this.totalWatched += 1;
     },
+    
     handleVideoEnd() {
-      this.saveProgress();
+      // 视频播放结束
     },
-    async saveProgress() {
-      const video = this.$refs.videoRef;
-      const current = video.currentTime;
-
-      // 收尾段
-      if (current > this.segmentStart) {
-        this.segments.push({
-          start: this.segmentStart,
-          end: current,
-          count: 1
-        });
+    
+    setupVideoAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // 没有找到认证token
       }
-
-      const payload = {
-        lastPosition: current,
-        totalWatched: this.totalWatched,
-        segments: this.segments
-      };
-
-      try {
-        await api.post(`/video-progress/${this.resourceId}/update`, payload);
-        console.log('进度已保存');
-      } catch (err) {
-        console.error('保存进度失败', err);
-      }
+    },
+    
+    async retryLoad() {
+      this.error = null;
+      this.loading = true;
+      this.videoUrl = '';
+      
+      await this.fetchVideoUrl();
     }
-  },
-  beforeRouteLeave(to, from, next) {
-    this.saveProgress().then(() => next());
   }
 };
 </script>
@@ -136,5 +209,98 @@ export default {
 video {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-details {
+  font-size: 14px;
+  color: #999;
+  margin-top: 10px;
+}
+
+.error {
+  text-align: center;
+  padding: 30px 20px;
+  color: #c62828;
+  font-size: 16px;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.error h3 {
+  margin: 0 0 15px 0;
+  color: #c62828;
+}
+
+.error-details {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.error-details p {
+  margin: 8px 0;
+  word-break: break-all;
+  color: #666;
+}
+
+.retry-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.retry-button:hover {
+  background-color: #2980b9;
+}
+
+.test-button {
+  display: inline-block;
+  margin-top: 15px;
+  margin-left: 10px;
+  padding: 10px 20px;
+  background-color: #f39c12;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.test-button:hover {
+  background-color: #e67e22;
 }
 </style>

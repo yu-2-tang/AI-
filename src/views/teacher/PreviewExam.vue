@@ -61,32 +61,23 @@ export default {
         random: '随机组卷',
         difficulty: '按难度组卷',
         knowledge: '按知识点组卷'
-      },
-      showDebug: true // 开发阶段显示调试信息，生产环境可设为 false
+      }
     };
   },
   computed: {
     mcQuestions() {
-      const filtered = this.exam.questions.filter(q => {
+      return this.exam.questions.filter(q => {
         const type = q.type?.toUpperCase();
         // 选择题类型：单选、多选、判断题
-        const isChoice = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'MULTIPLE', 'JUDGE', 'TRUE_FALSE'].includes(type);
-        console.log(`题目 ${q.questionId} - 类型: ${type}, 是否选择题: ${isChoice}`);
-        return isChoice;
+        return ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'MULTIPLE', 'JUDGE', 'TRUE_FALSE'].includes(type);
       });
-      console.log('选择题筛选结果:', filtered.length, '个题目');
-      return filtered;
     },
     essayQuestions() {
-      const filtered = this.exam.questions.filter(q => {
+      return this.exam.questions.filter(q => {
         const type = q.type?.toUpperCase();
         // 主观题类型：填空、简答、编程等
-        const isEssay = ['FILL_BLANK', 'FILL', 'SHORT_ANSWER', 'PROGRAMMING', 'OTHER', 'ESSAY'].includes(type);
-        console.log(`题目 ${q.questionId} - 类型: ${type}, 是否问答题: ${isEssay}`);
-        return isEssay;
+        return ['FILL_BLANK', 'FILL', 'SHORT_ANSWER', 'PROGRAMMING', 'OTHER', 'ESSAY'].includes(type);
       });
-      console.log('问答题筛选结果:', filtered.length, '个题目');
-      return filtered;
     }
   },
   methods: {
@@ -138,45 +129,29 @@ export default {
       return [];
     },
     
-    // 新增：根据题目ID批量获取题目详情
+    // 根据题目ID批量获取题目详情
     async loadQuestionDetails(questionIds, questionBankId) {
       if (!questionIds || questionIds.length === 0) {
-        console.log('PreviewExam: 没有题目ID需要加载');
         return [];
       }
-
-      console.log('PreviewExam: 开始加载题目详情', { questionIds, questionBankId });
       
       try {
-        // 方法1：尝试批量获取题目列表，然后筛选
+        // 尝试批量获取题目列表，然后筛选
         const res = await api.get(`/questionBank/${questionBankId}/question/list`);
         const allQuestions = res.data || res || [];
-        console.log('PreviewExam: 获取到题库所有题目', allQuestions.length);
-        console.log('PreviewExam: 题库中前3个题目的ID', allQuestions.slice(0, 3).map(q => q.questionId || q.id));
         
         // 根据ID筛选出需要的题目
         const filteredQuestions = allQuestions.filter(q => {
           const qId = q.questionId || q.id;
-          const isIncluded = questionIds.includes(qId);
-          if (isIncluded) {
-            console.log(`PreviewExam: 找到匹配题目 ${qId}`);
-          }
-          return isIncluded;
+          return questionIds.includes(qId);
         });
-        
-        console.log('PreviewExam: 筛选后的题目', filteredQuestions.length);
-        console.log('PreviewExam: 筛选后的题目ID', filteredQuestions.map(q => q.questionId || q.id));
-        
-        if (filteredQuestions.length > 0) {
-          console.log('PreviewExam: 第一个筛选题目详情', filteredQuestions[0]);
-        }
         
         return filteredQuestions;
         
       } catch (err) {
-        console.error('PreviewExam: 批量获取题目详情失败', err);
+        console.error('批量获取题目详情失败', err);
         
-        // 方法2：如果批量获取失败，尝试逐个获取
+        // 如果批量获取失败，尝试逐个获取
         const questions = [];
         for (const qId of questionIds) {
           try {
@@ -186,7 +161,7 @@ export default {
               questions.push(question);
             }
           } catch (singleErr) {
-            console.error(`PreviewExam: 获取题目 ${qId} 失败`, singleErr);
+            console.error(`获取题目 ${qId} 失败`, singleErr);
             // 如果获取失败，添加一个占位对象
             questions.push({
               questionId: qId,
@@ -200,25 +175,19 @@ export default {
       }
     },
     
-    // 修改：处理题目ID数组，获取完整题目信息
+    // 处理题目ID数组，获取完整题目信息
     async processQuestionIds(questionIds, questionBankId) {
       if (!Array.isArray(questionIds)) {
-        console.log('PreviewExam: questionIds 不是数组', questionIds);
         return [];
       }
       
       // 如果题目已经是完整对象而不是ID字符串，直接返回
       if (questionIds.length > 0 && typeof questionIds[0] === 'object') {
-        console.log('PreviewExam: 题目已是完整对象，无需加载详情');
         return questionIds;
       }
       
-      console.log('PreviewExam: 开始处理题目ID数组', questionIds);
-      console.log('PreviewExam: 使用题库ID', questionBankId);
-      
       // 获取题目详情
       const detailedQuestions = await this.loadQuestionDetails(questionIds, questionBankId);
-      console.log('PreviewExam: 获取到的详细题目数量', detailedQuestions.length);
       
       // 按照原始题目ID的顺序排列
       const orderedQuestions = [];
@@ -228,10 +197,8 @@ export default {
           return questionId === qId;
         });
         if (found) {
-          console.log(`PreviewExam: 为ID ${qId} 找到了题目详情`);
           orderedQuestions.push(found);
         } else {
-          console.log(`PreviewExam: 为ID ${qId} 未找到题目详情，使用占位对象`);
           // 如果没找到，添加占位对象
           orderedQuestions.push({
             questionId: qId,
@@ -242,8 +209,6 @@ export default {
         }
       }
       
-      console.log('PreviewExam: 处理完成的题目数组', orderedQuestions);
-      console.log('PreviewExam: 最终题目数量', orderedQuestions.length);
       return orderedQuestions;
     },
 
@@ -267,7 +232,6 @@ export default {
       }
       try {
         const data = JSON.parse(saved);
-        console.log('PreviewExam: 从localStorage加载的原始数据', data);
         
         // 初始化基础信息
         this.exam = {
@@ -276,23 +240,14 @@ export default {
           questions: data.questions || []
         };
         
-        console.log('PreviewExam: 题目数量', this.exam.questions.length);
-        console.log('PreviewExam: 题目ID数组', this.exam.questions);
-        
         // 如果有题目ID且有题库ID，则获取题目详情
         if (this.exam.questions.length > 0 && data.questionBankId) {
-          console.log('PreviewExam: 开始获取题目详情，题库ID:', data.questionBankId);
           try {
             this.exam.questions = await this.processQuestionIds(this.exam.questions, data.questionBankId);
-            console.log('PreviewExam: 题目详情加载完成', this.exam.questions);
           } catch (err) {
-            console.error('PreviewExam: 加载题目详情失败', err);
+            console.error('加载题目详情失败', err);
             alert('部分题目内容加载失败，将显示题目ID');
           }
-        }
-        
-        if (this.exam.questions.length > 0) {
-          console.log('PreviewExam: 第一题最终数据', this.exam.questions[0]);
         }
       } catch (err) {
         console.error('解析本地试卷失败', err);
@@ -304,26 +259,13 @@ export default {
 
     if (paperId) {
       try {
-        console.log('PreviewExam: 开始加载试卷，paperId:', paperId);
         const res = await api.get(`/paper/${paperId}`);
         const paper = res?.data || res;
-        
-        console.log('PreviewExam: API响应完整数据', res);
-        console.log('PreviewExam: 解析后的试卷数据', paper);
         
         if (!paper) {
           alert('试卷不存在或加载失败');
           return;
         }
-        
-        // 检查题目数据结构
-        console.log('PreviewExam: 原始题目数组', paper.questions);
-        console.log('PreviewExam: 题目数组类型检查', {
-          isArray: Array.isArray(paper.questions),
-          length: paper.questions?.length,
-          firstItem: paper.questions?.[0],
-          firstItemType: typeof paper.questions?.[0]
-        });
         
         this.exam = {
           taskCode: paper.title || paper.paperId || '智能组卷试卷',
@@ -333,41 +275,15 @@ export default {
         
         // 检查questionBankId
         const questionBankId = paper.questionBankId || paper.bankId;
-        console.log('PreviewExam: 题库ID查找结果', {
-          questionBankId: paper.questionBankId,
-          bankId: paper.bankId,
-          final: questionBankId
-        });
         
         // 如果题目是ID数组且有questionBankId，则获取详情
         if (this.exam.questions.length > 0 && questionBankId) {
-          console.log('PreviewExam: 开始获取题目详情 - 题目数量:', this.exam.questions.length, '题库ID:', questionBankId);
-          
-          // 先检查题目是否已经是完整对象
-          const firstQuestion = this.exam.questions[0];
-          console.log('PreviewExam: 第一个题目检查', {
-            value: firstQuestion,
-            type: typeof firstQuestion,
-            hasContent: firstQuestion?.content,
-            hasQuestionText: firstQuestion?.questionText,
-            isString: typeof firstQuestion === 'string'
-          });
-          
           try {
             this.exam.questions = await this.processQuestionIds(this.exam.questions, questionBankId);
-            console.log('PreviewExam: 题目详情加载完成，最终题目数据:', this.exam.questions);
-            if (this.exam.questions.length > 0) {
-              console.log('PreviewExam: 第一个处理后的题目:', this.exam.questions[0]);
-            }
           } catch (err) {
-            console.error('PreviewExam: 加载服务器试卷题目详情失败', err);
+            console.error('加载服务器试卷题目详情失败', err);
             alert('部分题目内容加载失败，将显示题目ID');
           }
-        } else {
-          console.log('PreviewExam: 跳过题目详情加载', {
-            questionsLength: this.exam.questions.length,
-            hasQuestionBankId: !!questionBankId
-          });
         }
         
       } catch (err) {
@@ -494,14 +410,5 @@ h3 {
 
 .secondary-btn:hover {
   background-color: #5a6268;
-}
-
-.debug-info {
-  font-size: 12px;
-  color: #666;
-}
-
-.debug-info p {
-  margin: 5px 0;
 }
 </style>
