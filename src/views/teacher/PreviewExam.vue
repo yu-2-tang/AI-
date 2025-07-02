@@ -4,7 +4,7 @@
 
     <!-- 选择题部分 -->
     <div v-if="mcQuestions.length > 0" class="question-section">
-      <h3>选择题</h3>
+      <h3>客观题</h3>
       <div v-for="(q, i) in mcQuestions" :key="'mc-' + i" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
         <div class="question-content">
@@ -23,11 +23,11 @@
         </div>
       </div>
     </div>
-    <div v-else class="no-questions">暂无选择题</div>
+    <div v-else class="no-questions">暂无客观题</div>
 
     <!-- 问答题部分 -->
     <div v-if="essayQuestions.length > 0" class="question-section">
-      <h3>问答题</h3>
+      <h3>主观题</h3>
       <div v-for="(q, i) in essayQuestions" :key="'essay-' + i" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
         <div class="question-content">
@@ -36,7 +36,7 @@
         </div>
       </div>
     </div>
-    <div v-else class="no-questions">暂无问答题</div>
+    <div v-else class="no-questions">暂无主观题</div>
 
     <!-- 返回按钮 -->
     <div class="actions">

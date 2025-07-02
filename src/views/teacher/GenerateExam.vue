@@ -22,12 +22,12 @@
     </div>
 
     <div class="form-group">
-      <label>选择题题目总数</label>
+      <label>客观题题目总数</label>
       <input type="number" v-model.number="examDetails.totalCount" :max="15" min="0" @input="adjustDifficultyDistribution" />
     </div>
 
     <div v-if="examDetails.mode === 'difficulty'" class="form-group">
-      <label>难度分布（每项最多5题，总和等于选择题题数）</label>
+      <label>难度分布（每项最多5题，总和等于客观题题数）</label>
       <div class="difficulty-row" v-for="(label, key) in difficultyLabels" :key="key">
         <label>{{ label }}：</label>
         <input
@@ -41,7 +41,7 @@
     </div>
 
     <div v-if="examDetails.mode === 'knowledge'" class="form-group">
-      <label>选择题知识点（可多选）</label>
+      <label>客观题知识点（可多选）</label>
       <div>
         <label v-for="kp in knowledgePoints" :key="kp.id" style="margin-right: 15px;">
           <input
@@ -56,7 +56,7 @@
     </div>
 
     <div class="form-group">
-      <label>问答题数量（最大不超过5）</label>
+      <label>主观题数量（最大不超过5）</label>
       <input type="number" v-model.number="examDetails.essayCount" :max="5" min="0" />
     </div>
 
@@ -274,12 +274,12 @@ export default {
         resultMessage += `📚 题库名称：${bankName}\n`;
         resultMessage += `🆔 题库ID：${this.questionBankId}\n\n`;
         resultMessage += `📝 题目统计：\n`;
-        resultMessage += `   • 选择题数量：${choiceCount}\n`;
-        resultMessage += `   • 问答题数量：${essayCount}\n`;
+        resultMessage += `   • 客观题数量：${choiceCount}\n`;
+        resultMessage += `   •主观题数量：${essayCount}\n`;
         resultMessage += `   • 总题目数：${totalCount}\n\n`;
         resultMessage += `⚙️ 当前配置需要：\n`;
-        resultMessage += `   • 选择题：${this.examDetails.totalCount}题\n`;
-        resultMessage += `   • 问答题：${this.examDetails.essayCount}题\n\n`;
+        resultMessage += `   • 客观题：${this.examDetails.totalCount}题\n`;
+        resultMessage += `   • 主观题：${this.examDetails.essayCount}题\n\n`;
         
         const canGenerate = choiceCount >= this.examDetails.totalCount && essayCount >= this.examDetails.essayCount;
         resultMessage += canGenerate ? 
