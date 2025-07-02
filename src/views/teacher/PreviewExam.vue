@@ -1,6 +1,6 @@
 <template>
   <div class="preview-exam">
-    <h2>试卷预览：{{ exam.taskCode }}（{{ modeLabel[exam.mode] }}）</h2>
+    <h2>试卷预览：{{ exam.taskCode }}（{{ modeLabel[exam.mode] || '未知模式' }}）</h2>
 
     <h3>选择题</h3>
     <ul v-if="mcQuestions.length > 0">
@@ -42,58 +42,68 @@ export default {
   computed: {
     mcQuestions() {
       return this.exam.questions.filter(q =>
-        ['SINGLE', 'MULTIPLE'].includes(q.type?.toUpperCase())
+        ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'JUDGE'].includes(q.type?.toUpperCase())
       );
     },
     essayQuestions() {
       return this.exam.questions.filter(q =>
-        ['SHORT', 'ESSAY'].includes(q.type?.toUpperCase())
+        ['FILL_BLANK', 'SHORT_ANSWER', 'PROGRAMMING'].includes(q.type?.toUpperCase())
       );
     }
   },
   async mounted() {
-  const taskId = this.$route.params.id;
+    const route = this.$route;
+    const taskId = route.params.id;
+    const paperId = route.query.paperId;
 
-  // 临时预览试卷逻辑
-  if (taskId === 'temp-preview') {
-    const saved = localStorage.getItem('generatedExam');
-    if (!saved) {
-      alert('暂无预览试卷');
-      this.$router.back();
+    if (taskId === 'temp-preview') {
+      const saved = localStorage.getItem('generatedExam');
+      if (!saved) {
+        alert('暂无预览试卷');
+        this.$router.back();
+        return;
+      }
+      try {
+        const data = JSON.parse(saved);
+        this.exam = {
+          taskCode: data.taskCode || '未命名试卷',
+          mode: data.mode || 'random',
+          questions: data.questions || []
+        };
+      } catch (err) {
+        console.error('解析本地试卷失败', err);
+        alert('无法预览试卷');
+        this.$router.back();
+      }
       return;
     }
 
-    const data = JSON.parse(saved);
-    this.exam = {
-      taskCode: data.taskCode || '未命名试卷',
-      mode: data.mode,
-      questions: data.questions || []
-    };
-    return;
-  }
-
-  // 正常加载已发布任务的试卷逻辑
-  try {
-    const res = await api.get(`/teacher/tasks/${taskId}`);
-    const task = res?.data;
-    if (!task) {
-      alert('未找到任务详情');
+    if (paperId) {
+      try {
+        const res = await api.get(`/paper/${paperId}`);
+        const paper = res?.data || res || res;
+        if (!paper) {
+          alert('试卷不存在或加载失败');
+          return;
+        }
+        this.exam = {
+          taskCode: paper.title || paper.paperId,
+          mode: (paper.generationMethod || 'random').toLowerCase(),
+          questions: paper.questions || []
+        };
+      } catch (err) {
+        console.error('加载试卷失败', err);
+        alert('加载失败：' + (err.response?.data?.message || err.message));
+      }
       return;
     }
 
-    this.exam = {
-      taskCode: task.title || task.taskId,
-      mode: task.mode || 'random',
-      questions: task.questions || []
-    };
-  } catch (err) {
-    console.error('加载任务失败', err);
-    alert('加载失败');
+    alert('缺少 paperId，无法加载试卷');
+    this.$router.back();
   }
-}
-
 };
 </script>
+
 
 <style scoped>
 .preview-exam {
