@@ -1,8 +1,9 @@
 <template>
   <div class="task-detail">
     <div v-if="isLoading">加载中...</div>
-
+    
     <div v-else-if="task">
+      <button class="back-btn" @click="$router.back()">← 返回</button>
       <h2>{{ task.title }} - 任务详情</h2>
 
       <div class="task-info">
@@ -195,6 +196,15 @@ export default {
 </script>
 
 <style scoped>
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
 .task-detail {
   padding: 20px;
 }

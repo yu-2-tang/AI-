@@ -79,12 +79,6 @@ const routes = [
         component: () => import('@/views/teacher/AddTask.vue')
       },
       {
-        path: 'tasks/:id',
-        name: 'TaskDetail',
-        component: () => import('../views/student/TaskDetail.vue'),
-        props: true
-      },
-      {
         path: 'courses/:courseId/generate-exam',
         name: 'GenerateExam',
         component: () => import('@/views/teacher/GenerateExam.vue')
@@ -149,7 +143,19 @@ const routes = [
       }
     ]
   },
-  
+  {
+  path: '/student/tasks',
+  component: () => import('@/views/student/TaskDetailDashboard.vue'),
+  children: [
+    {
+      path: 'tasks/:id',
+      name: 'TaskDetail',
+      component: () => import('@/views/student/TaskDetail.vue'),
+      props: true,
+      meta: { title: '任务详情' }
+    }
+  ]
+},
 
   /* ---------- 公共课程详情 ---------- */
   {
