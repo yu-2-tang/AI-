@@ -52,8 +52,12 @@ export default {
   },
   methods: {
     viewTask(task) {
-      this.$router.push({ name: 'TaskDetail', params: { id: task.taskId } })
-    },
+  if (this.getTaskStatus(task) === '已截止') {
+    alert('任务已截止，无法查看')
+    return
+  }
+  this.$router.push({ name: 'TaskDetail', params: { id: task.taskId } })
+},
     async fetchEnrolledCoursesWithDetails() {
       try {
         const coursesRes = await api.get('/student/courses')

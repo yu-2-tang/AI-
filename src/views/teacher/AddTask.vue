@@ -60,6 +60,10 @@
         </ul>
       </div>
     </div>
+    <div v-if="task.type !== 'EXAM_QUIZ'" class="form-group">
+  <label>总分</label>
+  <input type="number" v-model.number="task.maxScore" min="0" placeholder="请输入总分" required />
+</div>
 
     <button class="btn primary-btn" @click="saveTask">发布任务</button>
   </div>
@@ -77,7 +81,8 @@ export default {
         type: 'CHAPTER_HOMEWORK',
         deadline: '',
         description: '',
-        paperId: '' // 新增
+        paperId: '' ,// 新增
+        maxScore: 0
       },
       minDateTime: new Date().toISOString().slice(0, 16),
       files: [],
@@ -306,6 +311,10 @@ export default {
       return 'DOCUMENT';
     },
     async saveTask() {
+      if (this.task.type !== 'EXAM_QUIZ' && (!this.task.maxScore || this.task.maxScore <= 0)) {
+  alert('请填写有效的总分（必须大于0）')
+  return
+}
       if (!this.task.title || !this.task.type || !this.task.deadline) {
         alert('请填写完整任务信息（标题、类型和截止时间）');
         return;

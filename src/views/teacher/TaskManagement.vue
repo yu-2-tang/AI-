@@ -20,26 +20,82 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="task in course.tasks" :key="task.taskId">
-              <td>{{ task.title }}</td>
-              <td>{{ task.type }}</td>
-              <td>{{ task.deadline }}</td>
-              <td>
-                <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
-                <button
-                  v-if="task.type !== 'EXAM_QUIZ'"
-                  class="outline-btn"
-                  @click="downloadTask(task.taskId)"
-                >
-                  下载
-                </button>
-                <button class="primary-btn" @click="openEditModal(course.courseId, task.taskId)">编辑</button>
-                <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
-              </td>
-            </tr>
+            <template v-for="task in course.tasks" :key="task.taskId">
+              <tr>
+                <td>{{ task.title }}</td>
+                <td>{{ task.type }}</td>
+                <td>{{ task.deadline }}</td>
+                <td class="operation-cell">
+  <div class="btn-group">
+    <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
+    
+    <!-- 占位按钮：当 EXAM_QUIZ 时显示禁用按钮，确保对齐 -->
+    <button 
+      v-if="task.type !== 'EXAM_QUIZ'" 
+      class="outline-btn" 
+      @click="downloadTask(task.taskId)"
+    >下载</button>
+    
+    <button 
+      v-else 
+      class="outline-btn disabled-btn"
+      disabled
+    >下载</button>
+
+    <button class="primary-btn" @click="openEditModal(course.courseId, task.taskId)">编辑</button>
+    <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
+  </div>
+
+  <div class="btn-group">
+    <button
+      v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
+      class="outline-btn"
+      @click="toggleSubmissions(task)"
+    >
+      {{ task.showSubmissions ? '隐藏提交' : '查看提交' }}
+    </button>
+  </div>
+</td>
+
+              </tr>
+
+              <!-- 提交记录展示区域 -->
+              <tr v-if="task.showSubmissions && ['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)">
+                <td colspan="4">
+                  <h5>学生提交列表</h5>
+                  <table class="task-table nested">
+                    <thead>
+                      <tr>
+                        <th>学生ID</th>
+                        <th>任务类型</th>
+                        <th>提交时间</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="submission in task.submissions" :key="submission.submissionId">
+                        <td>{{ submission.studentId }}</td>
+                        <td>{{ task.type }}</td>
+                        <td>{{ submission.submitTime }}</td>
+                        <td>
+                          <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
+                          <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
+                          <button class="primary-btn" @click="handleGrading(task, submission)">批改</button>
+                          <span v-if="submission.graded" style="color: green; margin-left: 8px;">已批改</span>
+                        </td>
+                      </tr>
+                      <tr v-if="!task.submissions || !task.submissions.length">
+                        <td colspan="4" style="text-align: center; color: gray;">暂无提交记录</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
+
       <div v-else>
         <p>暂无任务</p>
       </div>
@@ -81,6 +137,7 @@
   </div>
 </template>
 
+
 <script>
 import api from '@/axios'
 import axios from 'axios'
@@ -97,25 +154,142 @@ export default {
     }
   },
   methods: {
-    async fetchCoursesAndTasks() {
-      try {
-        const res = await api.get('/teacher/courses')
-        const courses = res.data || []
+    async toggleSubmissions(task) {
+  const allowedTypes = ['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'];
 
-        const courseTasksPromises = courses.map(async course => {
-          const taskRes = await api.get(`/teacher/courses/${course.courseId}/tasks`)
-          return {
-            ...course,
-            tasks: taskRes.data || []
-          }
-        })
+  // 双重保险：如果按钮已隐藏，可以不写这个判断，但建议保留防止异常调用
+  if (!allowedTypes.includes(task.type)) {
+    alert('该任务类型不支持查看提交记录');
+    return;
+  }
 
-        this.courses = await Promise.all(courseTasksPromises)
-      } catch (err) {
-        console.error('加载课程或任务失败', err)
-        alert(err.response?.data?.message || '加载失败')
+  task.showSubmissions = !task.showSubmissions;
+
+  if (task.showSubmissions && !task.submissions) {
+    try {
+      const res = await api.get(`/submissions/getSubmissions/${task.taskId}`);
+
+      // 初始化 graded 字段
+      const submissions = res.map(sub => ({
+        ...sub,
+        graded: sub.status === 'graded' // 状态为 graded 时标记
+      }));
+
+      this.$set(task, 'submissions', submissions);
+    } catch (err) {
+      console.error('获取提交列表失败', err);
+      alert('加载提交记录失败');
+      this.$set(task, 'submissions', []);
+    }
+  }
+},
+viewSubmission(submission) {
+  const fileId = Array.isArray(submission.fileId) ? submission.fileId[0] : submission.fileId;
+  if (!fileId) {
+    alert('未上传文件');
+    return;
+  }
+  this.viewResource({ resourceId: fileId, name: '学生提交文件', type: 'DOCUMENT' });
+},
+
+downloadSubmission(submission) {
+  const fileId = Array.isArray(submission.fileId) ? submission.fileId[0] : submission.fileId;
+  if (!fileId) {
+    alert('未上传文件');
+    return;
+  }
+  this.downloadResource({ resourceId: fileId, name: '学生提交文件', type: 'DOCUMENT' });
+},
+async handleGrading(task, submission) {
+  if (task.type === 'EXAM_QUIZ') {
+    // 获取该学生提交的手动批改题
+    try {
+      const res = await api.get(`/grading/manual-questions/${submission.submissionId}`);
+      const manualQuestions = res.data;
+
+      if (!manualQuestions || manualQuestions.length === 0) {
+        // 没有主观题，自动批改
+        if (confirm('无主观题，是否自动批改客观题？')) {
+          await api.post(`/grading/auto/${submission.submissionId}`);
+          alert('自动批改完成');
+submission.graded = true;
+
+        }
+      } else {
+        // 有主观题，跳转手动批改页面
+        this.$router.push({
+          name: 'ManualGrading',
+          params: { submissionId: submission.submissionId }
+        });
       }
-    },
+    } catch (err) {
+      console.error('获取手动批改题失败', err);
+      alert('批改初始化失败');
+    }
+  } else {
+    // 章节作业 / 报告上传
+    const score = prompt('请输入该学生得分:');
+    if (!score || isNaN(score)) {
+      alert('请输入有效的分数');
+      return;
+    }
+
+    try {
+       await api.put(`/grading/grade-works`, null, {
+        params: {
+          submission_id: submission.submissionId,
+          grade: parseFloat(score),
+          feedback: '老师手动批改'
+        }
+      });
+      console.log(Number(score));
+      alert('批改成功');
+// 更新当前 submission 状态为已批改
+submission.graded = true;
+
+    } catch (err) {
+      console.error('批改失败', err);
+      alert('批改失败');
+    }
+  }
+},
+    async fetchCoursesAndTasks() {
+  try {
+    const res = await api.get('/teacher/courses');
+    const courses = res.data || [];
+
+    const courseTasksPromises = courses.map(async course => {
+      const response = await api.get(`/teacher/courses/${course.courseId}/tasks`);
+      const taskList = response?.data || [];
+
+      const tasks = await Promise.all(taskList.map(async task => {
+        let submissions = [];
+        try {
+          const subRes = await api.get(`/submissions/getSubmissions/${task.taskId}`);
+          submissions = subRes || [];
+        } catch (e) {
+          console.warn(`获取任务 ${task.taskId} 的提交失败：`, e);
+        }
+
+        return {
+          ...task,
+          submissions,
+          showSubmissions: false
+        };
+      }));
+
+      return {
+        ...course,
+        tasks
+      };
+    });
+
+    this.courses = await Promise.all(courseTasksPromises);
+  } catch (err) {
+    console.error('加载课程或任务失败', err);
+    alert(err.response?.data?.message || '加载失败');
+  }
+},
     goToAddTask(courseId) {
       this.$router.push({ name: 'AddTask', params: { courseId } })
     },
@@ -493,80 +667,123 @@ export default {
 </script>
 
 <style scoped>
-.teacher-tasks {
-  padding: 20px;
-}
-.course-card {
-  background: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
-.primary-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-.task-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.task-table th, .task-table td {
-  border: 1px solid #eee;
-  padding: 8px;
-}
-.danger-btn {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-}
+/* 蓝色边框按钮 */
 .outline-btn {
   background: transparent;
   border: 1px solid #3498db;
   color: #3498db;
-  padding: 4px 8px;
+  padding: 6px 0;
   border-radius: 4px;
   cursor: pointer;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* 蓝色填充按钮 */
+.primary-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 80x;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 红色填充按钮 */
+.danger-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.teacher-tasks {
+  padding: 20px;
+}
+
+.course-card {
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.task-table th,
+.task-table td {
+  border: 1px solid #eee;
+  padding: 8px;
+}
+
+
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .modal-content {
   background: white;
   padding: 20px;
   border-radius: 8px;
   width: 400px;
 }
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
 }
+
 .form-group {
   margin-bottom: 15px;
 }
+
 .form-group label {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
 }
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -575,7 +792,42 @@ export default {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
+
 .form-group textarea {
   height: 80px;
 }
+
+.task-table.nested {
+  margin-top: 10px;
+  background-color: #fafafa;
+}
+
+.task-table.nested th,
+.task-table.nested td {
+  border-color: #ddd;
+}
+
+/* 按钮整体布局，按钮组左右分开 */
+.operation-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 每组按钮内横向排列并保持间距 */
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+/* 禁用占位按钮 */
+.disabled-btn {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 所有按钮统一宽度、垂直居中 */
+
+
 </style>

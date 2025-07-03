@@ -21,39 +21,37 @@
         @change="handleFileChange"
       />
 
-      <div v-if="task.resources && task.resources.length > 0" class="task-resources">
-        <h3>任务资源</h3>
-        <ul>
-          <li v-for="res in task.resources" :key="res.resourceId">
-            {{ res.name }}
-            <button @click="downloadResource(res)">下载</button>
+      <!-- 任务资源 -->
+<div v-if="task.resources && task.resources.length > 0" class="task-resources">
+  <h3>任务资源</h3>
+  <ul>
+    <li v-for="res in task.resources" :key="res.resourceId">
+      {{ res.name }}
+      <button @click="downloadResource(res)">下载</button>
 
-            <!-- 视频资源 -->
-            <template v-if="res.type === 'VIDEO'">
-              <button @click="viewVideo(res)">观看</button>
-              <button
-                v-if="task.type === 'VIDEO_WATCHING'"
-                @click="markAsCompleted"
-              >我已完成</button>
-            </template>
+      <!-- 视频资源 -->
+      <template v-if="res.type === 'VIDEO'">
+        <button @click="viewVideo(res)">观看</button>
+      </template>
 
-            <!-- 文档资源 -->
-            <template v-else-if="['DOCUMENT', 'PPT'].includes(res.type)">
-              <button @click="viewPreview(res)">查看</button>
+      <!-- 文档资源 -->
+      <template v-else-if="['DOCUMENT', 'PPT'].includes(res.type)">
+        <button @click="viewPreview(res)">查看</button>
 
-              <button
-                v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)"
-                @click="triggerFileInput"
-              >提交</button>
+        <button
+          v-if="['PPT_VIEW', 'MATERIAL_READING'].includes(task.type) && !isCompleted"
+          @click="markAsCompleted"
+        >我已完成</button>
+      </template>
+    </li>
+  </ul>
+</div>
 
-              <button
-                v-if="['PPT_VIEW', 'MATERIAL_READING'].includes(task.type) && !isCompleted"
-                @click="markAsCompleted"
-              >我已完成</button>
-            </template>
-          </li>
-        </ul>
-      </div>
+<!-- 提交按钮：无论是否有资源都显示 -->
+<div v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)">
+  <button @click="triggerFileInput" class="btn primary-btn">提交</button>
+</div>
+
 
       <div v-if="task.type === 'EXAM_QUIZ'">
         <button class="btn primary-btn" @click="startExam">开始答题</button>

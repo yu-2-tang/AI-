@@ -57,6 +57,11 @@ const routes = [
         meta: { title: '学生管理' }
       },
       {
+  path: '/manual-grading/:submissionId',
+  name: 'ManualGrading',
+  component: () => import('@/views/teacher/ManualGrading.vue')
+},
+      {
         path: 'courses',
         name: 'CourseManagement',
         component: () => import('@/views/teacher/CourseManagement.vue'),

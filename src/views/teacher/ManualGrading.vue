@@ -1,0 +1,218 @@
+<template>
+  <div class="manual-grading">
+    <h2>试卷批改</h2>
+
+    <!-- 客观题答案 -->
+    <div v-if="autoQuestions.length > 0" class="question-section">
+      <h3>客观题</h3>
+      <div v-for="(q, i) in autoQuestions" :key="q.questionId" class="question-item">
+        <div class="question-number">{{ i + 1 }}.</div>
+        <div class="question-content">
+          <p class="question-text">{{ q.questionText }}</p>
+          <p>学生答案：{{ getStudentAnswer(q) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主观题答案 -->
+    <div v-if="manualQuestions.length > 0" class="question-section">
+      <h3>主观题</h3>
+      <div v-for="(q, i) in manualQuestions" :key="q.questionId" class="question-item">
+        <div class="question-number">{{ i + 1 }}.</div>
+        <div class="question-content">
+          <p class="question-text">{{ q.questionText }}</p>
+          <p>学生答案：{{ q.answers.join(', ') }}</p>
+          <input
+            type="number"
+            min="0"
+            placeholder="请输入得分"
+            v-model.number="grades[q.questionId]"
+            class="score-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary-btn" @click="goBack">返回</button>
+      <button class="btn primary-btn" @click="submitGrades">提交批改</button>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '@/axios';
+
+export default {
+  name: 'ManualGrading',
+  data() {
+    return {
+      submissionId: this.$route.params.submissionId,
+      autoQuestions: [],
+      manualQuestions: [],
+      grades: {}
+    };
+  },
+  methods: {
+    async fetchSubmission() {
+      try {
+        // 拉取所有答题记录
+        const res = await api.get(`/grading/manual-questions/${this.submissionId}`);
+        const manualList = res;
+
+        if (manualList.length === 0) {
+          alert('没有需要手动批改的题目，系统将尝试自动批改');
+          await api.post(`/grading/auto/${this.submissionId}`);
+          alert('自动批改已完成');
+          this.$router.back();
+          return;
+        }
+
+        // 拆分客观题和主观题
+        this.manualQuestions = manualList.map(record => ({
+          questionId: record.questionId,
+          questionText: record.questionText || '题目内容缺失',
+          answers: record.answers || []
+        }));
+
+        // 拉取全部提交答案（包括客观题）
+        const allRes = await api.get(`/submissions/getSubmissions/${this.submissionId}`);
+        const allAnswers = allRes[0]?.answerRecords || [];
+
+        this.autoQuestions = allAnswers.filter(record => {
+          const type = record.questionType?.toUpperCase();
+          return ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'JUDGE', 'TRUE_FALSE'].includes(type);
+        }).map(record => ({
+          questionId: record.questionId,
+          questionText: record.questionText || '题目内容缺失',
+          answers: record.answers || []
+        }));
+
+      } catch (err) {
+        console.error('加载提交记录失败', err);
+        alert('加载提交记录失败');
+      }
+    },
+    getStudentAnswer(q) {
+      return q.answers ? q.answers.join(', ') : '未作答';
+    },
+    async submitGrades() {
+      const questionGrades = Object.entries(this.grades).map(([questionId, score]) => ({
+        questionId,
+        score: Number(score)
+      }));
+
+      if (questionGrades.length === 0) {
+        alert('请至少填写一个题目的得分');
+        return;
+      }
+
+      try {
+        await api.put(`/grading/grade-manual/${this.submissionId}`, {
+          questionGrades,
+          feedback: '老师手动批改'
+        });
+        alert('批改成功');
+        this.$router.back();
+      } catch (err) {
+        console.error('提交批改失败', err);
+        alert('提交批改失败');
+      }
+    },
+    goBack() {
+      this.$router.back();
+    }
+  },
+  mounted() {
+    this.fetchSubmission();
+  }
+};
+</script>
+
+<style scoped>
+.manual-grading {
+  padding: 30px;
+  max-width: 900px;
+  margin: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.question-section {
+  margin-bottom: 30px;
+}
+
+.question-item {
+  display: flex;
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.question-number {
+  font-weight: bold;
+  color: #007bff;
+  margin-right: 10px;
+  font-size: 16px;
+  min-width: 30px;
+}
+
+.question-content {
+  flex: 1;
+}
+
+.question-text {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.score-input {
+  width: 150px;
+  padding: 6px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.actions {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 0 10px;
+}
+
+.primary-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.secondary-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: #0056b3;
+}
+
+.secondary-btn:hover {
+  background-color: #5a6268;
+}
+</style>
