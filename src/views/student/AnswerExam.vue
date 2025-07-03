@@ -85,19 +85,6 @@ export default {
     }
   },
   methods: {
-    async getStudentIdFromApi() {
-  try {
-    const res = await api.get('/student/courses')
-    const list = res?.data?.data?.content
-    const studentId = Array.isArray(list) && list.length > 0 ? list[0].studentId : null
-
-    if (!studentId) throw new Error('无法获取 studentId')
-    return studentId
-  } catch (e) {
-    console.error('获取学生ID失败', e)
-    return null
-  }
-},
     getQuestionText(q) {
       return q.content || q.question || q.stem || q.text || '题目内容缺失'
     },
@@ -114,19 +101,12 @@ export default {
     },
     async submitExam() {
       const taskId = this.$route.params.taskId
-      const studentId = await this.getStudentIdFromApi()
-
-      if (!studentId) {
-        alert('无法获取学生ID，请重新登录')
-        return
-      }
 
       const payload = {
         taskId,
-        studentId,
         answerRecordDTO: Object.entries(this.answers).map(([questionId, ans]) => ({
           questionId,
-          answers: Array.isArray(ans) ? ans : [ans] // 单选或主观题统一为数组
+          answers: Array.isArray(ans) ? ans : [ans]
         }))
       }
 
