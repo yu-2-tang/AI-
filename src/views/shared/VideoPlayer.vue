@@ -53,7 +53,9 @@ export default {
       segmentEnd: 0,
       loaded: false,
       loading: false,
-      error: null
+      error: null,
+      progressTimer: null, // 新增定时器引用
+      lastWatchedSecond: 0 // 新增：用于 totalWatched 精准递增
     };
   },
   async mounted() {
@@ -61,28 +63,50 @@ export default {
       this.error = '缺少资源ID参数';
       return;
     }
-    
+    // 1. 先获取上次观看进度
+    await this.fetchProgress();
+
+    // 2. 再加载视频
     await this.fetchVideoUrl();
 
-    try {
-      this.loaded = true;
-      this.lastPosition = 0;
-      this.segments = [];
-      this.totalWatched = 0;
+    this.$nextTick(() => {
+      if (this.$refs.videoRef) {
+        this.$refs.videoRef.addEventListener('loadeddata', () => {
+          if (this.lastPosition > 0) {
+            this.$refs.videoRef.currentTime = this.lastPosition;
+            console.log('断点续播跳转到：', this.lastPosition);
+          }
+        }, { once: true });
+      }
+    });
 
-      this.$nextTick(() => {
-        if (this.$refs.videoRef && this.lastPosition > 0) {
-          this.$refs.videoRef.currentTime = this.lastPosition;
-        }
-        this.setupVideoAuth();
-      });
-      this.segmentStart = this.lastPosition;
-    } catch (err) {
-      this.loaded = true;
-      this.segmentStart = 0;
-    }
+    // 定时保存观看进度，每3秒
+    this.progressTimer = setInterval(() => {
+      if (this.loaded) this.saveProgress();
+    }, 3000);
+  },
+  beforeUnmount() {
+    if (this.progressTimer) clearInterval(this.progressTimer);
+    this.saveProgress();
   },
   methods: {
+    // 1. 获取上次观看进度
+    async fetchProgress() {
+      try {
+        const res = await api.get(`/video-progress/${this.resourceId}`);
+        if (res && res.data) {
+          this.lastPosition = res.data.lastPosition || 0;
+          this.totalWatched = res.data.totalWatched || 0;
+          this.segments = res.data.segments || [];
+        }
+      } catch (e) {
+        // 没有记录也不报错
+        this.lastPosition = 0;
+        this.totalWatched = 0;
+        this.segments = [];
+      }
+    },
+
     async fetchVideoUrl() {
       try {
         if (!this.resourceId || this.resourceId === 'undefined' || this.resourceId === 'null') {
@@ -115,6 +139,44 @@ export default {
       }
     },
     
+    // 新增：保存观看进度到后端
+    async saveProgress() {
+      // 终极兜底：segments 为空时强制 push 一段
+      if (this.loaded && this.$refs.videoRef) {
+        const current = this.$refs.videoRef.currentTime;
+        if (current > this.segmentStart) {
+          this.segments.push({
+            start: this.segmentStart,
+            end: current,
+            count: 1
+          });
+          this.segmentStart = current;
+          console.log('saveProgress兜底补最后一段', JSON.stringify(this.segments));
+        }
+        // 如果 segments 依然为空，强制 push 一段
+        if (this.segments.length === 0) {
+          this.segments.push({
+            start: 0,
+            end: current,
+            count: 1
+          });
+          console.log('saveProgress强制补一段', JSON.stringify(this.segments));
+        }
+      }
+      try {
+        const segmentsToSend = this.segments.slice();
+        console.log('saveProgress segments:', JSON.stringify(segmentsToSend), 'totalWatched:', this.totalWatched);
+        await api.post(`/video-progress/${this.resourceId}/update`, {
+          lastPosition: this.$refs.videoRef ? this.$refs.videoRef.currentTime : this.lastPosition,
+          totalWatched: this.totalWatched,
+          segments: segmentsToSend
+        });
+        this.segments = [];
+      } catch (e) {
+        console.warn('保存观看进度失败', e);
+      }
+    },
+
     handleLoadStart() {
       this.loading = true;
       this.error = null;
@@ -122,6 +184,12 @@ export default {
     
     handleLoadedData() {
       this.loading = false;
+      this.loaded = true;
+      if (this.$refs.videoRef) {
+        this.segmentStart = this.$refs.videoRef.currentTime;
+        this.lastWatchedSecond = Math.floor(this.$refs.videoRef.currentTime);
+        console.log('handleLoadedData: segmentStart 初始化为', this.segmentStart);
+      }
     },
     
     handleVideoError(e) {
@@ -159,27 +227,63 @@ export default {
     },
     
     handlePause() {
-      // 视频暂停播放
+      // 补最后一段
+      if (this.loaded && this.$refs.videoRef) {
+        const current = this.$refs.videoRef.currentTime;
+        if (current > this.segmentStart) {
+          this.segments.push({
+            start: this.segmentStart,
+            end: current,
+            count: 1
+          });
+          this.segmentStart = current;
+          console.log('pause补最后一段', this.segments);
+        }
+      }
+      this.saveProgress();
     },
     
     handleTimeUpdate(e) {
-      if (!this.loaded) return;
+      if (!this.loaded) {
+        console.log('未加载完成，跳过timeupdate');
+        return;
+      }
       const current = e.target.currentTime;
-
-      if (current - this.segmentStart >= 5) {
+      this.lastPosition = current;
+      // 只在整秒递增 totalWatched
+      const curSec = Math.floor(current);
+      if (curSec > this.lastWatchedSecond) {
+        this.totalWatched += (curSec - this.lastWatchedSecond);
+        this.lastWatchedSecond = curSec;
+        console.log('totalWatched递增', this.totalWatched);
+      }
+      // 分段统计：每超过1秒 push 一段
+      if (current - this.segmentStart >= 1) {
         this.segments.push({
           start: this.segmentStart,
           end: current,
           count: 1
         });
         this.segmentStart = current;
+        console.log('push segment', this.segments);
       }
-
-      this.totalWatched += 1;
     },
-    
+
     handleVideoEnd() {
-      // 视频播放结束
+      // 补最后一段
+      if (this.loaded && this.$refs.videoRef) {
+        const current = this.$refs.videoRef.currentTime;
+        if (current > this.segmentStart) {
+          this.segments.push({
+            start: this.segmentStart,
+            end: current,
+            count: 1
+          });
+          this.segmentStart = current;
+          console.log('end补最后一段', this.segments);
+        }
+      }
+      this.saveProgress();
     },
     
     setupVideoAuth() {
@@ -195,7 +299,7 @@ export default {
       this.videoUrl = '';
       
       await this.fetchVideoUrl();
-    }
+    }  
   }
 };
 </script>
