@@ -78,10 +78,8 @@ export default {
         : `/student/courses/${this.courseId}`
     },
     getGraphUrl() {
-      // 修改：学生端和教师端都使用通用的知识图谱接口
-      return this.getRole() === 'TEACHER'
-        ? `/teacher/courses/${this.courseId}/knowledge-graph`
-        : `/knowledge-graph/course/${this.courseId}`
+      // 学生端和教师端都使用教师端的知识图谱接口
+      return `/teacher/courses/${this.courseId}/knowledge-graph`
     },
     getResourceUrl() {
       return this.getRole() === 'TEACHER'
