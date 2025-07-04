@@ -21,42 +21,38 @@
     </div>
 
     <div class="form-group">
-      <label>客观题题目总数</label>
-      <input type="number" v-model.number="examDetails.totalCount" :max="15" min="0" @input="adjustDifficultyDistribution" />
+      <label>题目总数</label>
+      <input type="number" v-model.number="examDetails.totalCount" min="1" max="50" />
     </div>
 
     <div v-if="examDetails.mode === 'difficulty'" class="form-group">
-      <label>难度分布（每项最多5题，总和等于客观题题数）</label>
+      <label>难度分布（总和应等于题目总数）</label>
       <div class="difficulty-row" v-for="(label, key) in difficultyLabels" :key="key">
         <label>{{ label }}：</label>
         <input
           type="number"
           v-model.number="examDetails.difficulty[key]"
-          :max="5"
           min="0"
           @input="onDifficultyChange(key)"
         />
       </div>
+      <p v-if="difficultySum !== examDetails.totalCount" style="color: red;">
+        难度分布总和（{{ difficultySum }}）与题目总数（{{ examDetails.totalCount }}）不一致
+      </p>
     </div>
 
     <div v-if="examDetails.mode === 'knowledge'" class="form-group">
-      <label>客观题知识点（可多选）</label>
+      <label>知识点（可多选）</label>
       <div>
         <label v-for="kp in knowledgePoints" :key="kp.id" style="margin-right: 15px;">
           <input
             type="checkbox"
             :value="kp.id"
             v-model="examDetails.knowledgePointIds"
-            @change="updateKnowledgeBasedTotal"
           />
           {{ kp.name }}
         </label>
       </div>
-    </div>
-
-    <div class="form-group">
-      <label>主观题数量（最大不超过5）</label>
-      <input type="number" v-model.number="examDetails.essayCount" :max="5" min="0" />
     </div>
 
     <button class="btn primary-btn" @click="generateExam" :disabled="generating">
@@ -87,9 +83,8 @@ export default {
     return {
       examDetails: {
         mode: 'random',
-        totalCount: 5,
-        essayCount: 0,
-        difficulty: { easy: 2, medium: 2, hard: 1 },
+        totalCount: 10,
+        difficulty: { easy: 4, medium: 4, hard: 2 },
         knowledgePointIds: []
       },
       knowledgePoints: [],
@@ -101,8 +96,15 @@ export default {
       generatedQuestions: [],
       courseId: '',
       questionBankId: '',
-      generating: false
+      generating: false,
+      taskCode: ''
     };
+  },
+  computed: {
+    difficultySum() {
+      const d = this.examDetails.difficulty;
+      return (d.easy || 0) + (d.medium || 0) + (d.hard || 0);
+    }
   },
   async mounted() {
     this.courseId = this.$route.params.courseId;
@@ -142,94 +144,61 @@ export default {
         console.error('获取知识点失败', err);
       }
     },
-    onDifficultyChange(changedKey) {
-      const d = this.examDetails.difficulty;
-      const total = this.examDetails.totalCount;
-      const keys = ['easy', 'medium', 'hard'];
-      let sum = d.easy + d.medium + d.hard;
-      if (sum > total) {
-        let excess = sum - total;
-        for (let k of keys) {
-          if (k !== changedKey && d[k] > 0) {
-            let reducible = Math.min(d[k], excess);
-            d[k] -= reducible;
-            excess -= reducible;
-            if (excess === 0) break;
-          }
-        }
-      }
-      keys.forEach(k => {
-        if (d[k] > 5) d[k] = 5;
-        if (d[k] < 0) d[k] = 0;
-      });
-      this.syncTotalFromDifficulty();
-    },
-    adjustDifficultyDistribution() {
-      const total = this.examDetails.totalCount;
-      const d = this.examDetails.difficulty;
-      d.easy = Math.min(total, 5);
-      d.medium = Math.min(Math.max(total - d.easy, 0), 5);
-      d.hard = Math.max(total - d.easy - d.medium, 0);
-      this.syncTotalFromDifficulty();
-    },
-    syncTotalFromDifficulty() {
-      const d = this.examDetails.difficulty;
-      this.examDetails.totalCount = d.easy + d.medium + d.hard;
-    },
-    updateKnowledgeBasedTotal() {
-      const count = this.examDetails.knowledgePointIds.length * 5;
-      this.examDetails.totalCount = Math.min(count, 15);
+    onDifficultyChange() {
+      // 不再自动调整难度分布，让用户自行控制
     },
     async generateExam() {
-  if (!this.questionBankId || this.questionBankId.trim() === '') {
-    alert('题库ID缺失，请刷新页面重试');
-    return;
-  }
+      if (!this.questionBankId || this.questionBankId.trim() === '') {
+        alert('题库ID缺失，请刷新页面重试');
+        return;
+      }
 
-  if (this.examDetails.totalCount < 0 || this.examDetails.essayCount < 0) {
-    alert('题目数量不能为负数');
-    return;
-  }
+      if (this.examDetails.totalCount < 1) {
+        alert('题目总数必须大于0');
+        return;
+      }
 
-  if (this.examDetails.totalCount === 0 && this.examDetails.essayCount === 0) {
-    alert('客观题和主观题数量不能都为0');
-    return;
-  }
+      // 难度模式校验
+      if (this.examDetails.mode === 'difficulty') {
+        if (this.difficultySum !== this.examDetails.totalCount) {
+          alert(`难度分布总和（${this.difficultySum}）与题目总数（${this.examDetails.totalCount}）不一致`);
+          return;
+        }
+      }
 
+      // 知识点模式校验
+      if (this.examDetails.mode === 'knowledge') {
+        if (this.examDetails.knowledgePointIds.length === 0) {
+          return alert('请选择知识点');
+        }
+      }
 
       const payload = {
-  courseId: this.courseId,
-  bankId: this.questionBankId,
-  mode: this.examDetails.mode,
-  totalCount: this.examDetails.totalCount + this.examDetails.essayCount,
-  essayCount: this.examDetails.essayCount,
-  paperName: this.taskCode
-};
-
+        courseId: this.courseId,
+        bankId: this.questionBankId,
+        mode: this.examDetails.mode,
+        totalCount: this.examDetails.totalCount,
+        title: this.taskCode
+      };
 
       if (this.examDetails.mode === 'difficulty') {
         payload.difficultyDistribution = this.examDetails.difficulty;
       }
+      
       if (this.examDetails.mode === 'knowledge') {
-  if (this.examDetails.knowledgePointIds.length === 0) {
-    return alert('请选择知识点');
-  }
-
-  // 把选择的 ID 转成名字
-  payload.knowledgePointIds = this.knowledgePoints
-    .filter(kp => this.examDetails.knowledgePointIds.includes(kp.id))
-    .map(kp => kp.name);
-}
-
+        payload.knowledgePointIds = this.knowledgePoints
+          .filter(kp => this.examDetails.knowledgePointIds.includes(kp.id))
+          .map(kp => kp.name);
+      }
 
       this.generating = true;
       try {
-        let res = await api.post('/paper/generate', payload);
+        const res = await api.post('/paper/generate', payload);
         
         // 兼容不同的响应格式
         const responseData = res.data || res;
-        const questions = responseData.questions || [];
-        const paperId = responseData.paperId;
+        const paper = responseData.data || responseData;
+        const questions = paper.questions || [];
 
         if (!Array.isArray(questions) || questions.length === 0) {
           throw new Error('未获取到题目数据，可能是题库中题目数量不足');
@@ -243,9 +212,8 @@ export default {
           taskCode: this.taskCode,
           questions,
           questionBankId: this.questionBankId,
-          paperId,
-          totalCount: this.examDetails.totalCount,
-          essayCount: this.examDetails.essayCount
+          paperId: paper.paperId,
+          totalCount: this.examDetails.totalCount
         }));
 
         alert('✅ 试卷生成成功，将返回任务编辑页面继续填写任务信息');
@@ -275,10 +243,7 @@ export default {
         // 获取题库中的题目列表来统计数量
         const questionsRes = await api.get(`/questionBank/${this.questionBankId}/question/list`);
         
-        const questions = questionsRes || [];
-        // 根据数据库表结构，题目类型为：SINGLE, MULTIPLE, JUDGE, FILL, SHORT, OTHER
-        const choiceCount = questions.filter(q => q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE' || q.type === 'JUDGE').length;
-        const essayCount = questions.filter(q => q.type === 'SHORT_ANSWER' || q.type === 'FILL').length;
+        const questions = questionsRes.data || questionsRes || [];
         const totalCount = questions.length;
         
         // 处理ApiResponse包装的数据
@@ -289,17 +254,14 @@ export default {
         resultMessage += `📚 题库名称：${bankName}\n`;
         resultMessage += `🆔 题库ID：${this.questionBankId}\n\n`;
         resultMessage += `📝 题目统计：\n`;
-        resultMessage += `   • 客观题数量：${choiceCount}\n`;
-        resultMessage += `   •主观题数量：${essayCount}\n`;
         resultMessage += `   • 总题目数：${totalCount}\n\n`;
         resultMessage += `⚙️ 当前配置需要：\n`;
-        resultMessage += `   • 客观题：${this.examDetails.totalCount}题\n`;
-        resultMessage += `   • 主观题：${this.examDetails.essayCount}题\n\n`;
+        resultMessage += `   • 题目总数：${this.examDetails.totalCount}题\n\n`;
         
-        const canGenerate = choiceCount >= this.examDetails.totalCount && essayCount >= this.examDetails.essayCount;
+        const canGenerate = totalCount >= this.examDetails.totalCount;
         resultMessage += canGenerate ? 
           '✅ 题库题目数量充足，可以生成试卷！' : 
-          '❌ 题库题目数量不足，无法生成试卷！\n\n💡 解决方案：\n1. 减少试卷题目数量\n2. 联系管理员添加更多题目到题库';
+          `❌ 题库题目数量不足，无法生成试卷！\n\n💡 解决方案：\n1. 减少题目数量（当前题库有 ${totalCount} 题）\n2. 联系管理员添加更多题目到题库`;
         
         alert(resultMessage);
       } catch (err) {
@@ -353,7 +315,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 .generate-exam {

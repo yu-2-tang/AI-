@@ -1,6 +1,8 @@
 <template>
   <div class="video-player">
-    <h2>视频播放 - {{ videoName }}</h2>
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">← 返回</button>
+    <h2>视频播放 </h2>
     
     <video
       ref="videoRef"
@@ -43,6 +45,11 @@ export default {
   name: 'VideoPlayer',
   data() {
     return {
+       // 新增状态变量
+      taskId: this.$route.query.taskId || '', // 从路由参数获取任务ID
+      showCompletionDialog: false, // 控制弹窗显示
+      hasMarkedCompleted: false, // 防止重复标记
+      videoDuration: 0, // 视频总时长
       resourceId: this.$route.params.resourceId,
       videoUrl: '',
       videoName: '',
@@ -182,13 +189,15 @@ export default {
       this.error = null;
     },
     
+    // 在handleLoadedData中获取视频总时长
     handleLoadedData() {
       this.loading = false;
       this.loaded = true;
       if (this.$refs.videoRef) {
+        this.videoDuration = this.$refs.videoRef.duration;
         this.segmentStart = this.$refs.videoRef.currentTime;
         this.lastWatchedSecond = Math.floor(this.$refs.videoRef.currentTime);
-        console.log('handleLoadedData: segmentStart 初始化为', this.segmentStart);
+        console.log('视频总时长:', this.videoDuration);
       }
     },
     
@@ -244,19 +253,24 @@ export default {
     },
     
     handleTimeUpdate(e) {
-      if (!this.loaded) {
-        console.log('未加载完成，跳过timeupdate');
-        return;
-      }
-      const current = e.target.currentTime;
-      this.lastPosition = current;
-      // 只在整秒递增 totalWatched
-      const curSec = Math.floor(current);
-      if (curSec > this.lastWatchedSecond) {
-        this.totalWatched += (curSec - this.lastWatchedSecond);
-        this.lastWatchedSecond = curSec;
-        console.log('totalWatched递增', this.totalWatched);
-      }
+      if (!this.loaded) return;
+  
+  const current = e.target.currentTime;
+  this.lastPosition = current;
+  
+  // 整秒递增逻辑
+  const curSec = Math.floor(current);
+  if (curSec > this.lastWatchedSecond) {
+    this.totalWatched += (curSec - this.lastWatchedSecond);
+    this.lastWatchedSecond = curSec;
+    
+    // 检查是否达到90%
+    if (this.videoDuration > 0 && 
+        this.totalWatched >= this.videoDuration * 0.9 &&
+        this.taskId) {
+      this.markTaskAsCompleted();
+    }
+  }
       // 分段统计：每超过1秒 push 一段
       if (current - this.segmentStart >= 1) {
         this.segments.push({
@@ -299,7 +313,20 @@ export default {
       this.videoUrl = '';
       
       await this.fetchVideoUrl();
-    }  
+    },
+    async markTaskAsCompleted() {
+  try {
+    const token = localStorage.getItem('token');
+    await axios.put(`http://localhost:8082/api/submissions/complete/${this.taskId}`, {}, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined
+      }
+    });
+    console.log('任务已自动标记为完成');
+  } catch (err) {
+    console.error('自动标记任务失败:', err);
+  }
+}
   }
 };
 </script>
@@ -341,6 +368,15 @@ video {
   font-size: 14px;
   color: #999;
   margin-top: 10px;
+}
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
 }
 
 .error {

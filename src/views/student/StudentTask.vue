@@ -77,7 +77,7 @@ export default {
         )
       } catch (err) {
         console.error('加载课程失败:', err)
-        this.showMessage('error', '加载课程数据失败')
+        alert( '加载课程数据失败')
       }
     },
     formatTaskType(type) {
@@ -85,7 +85,8 @@ export default {
         'CHAPTER_HOMEWORK': '章节作业',
         'VIDEO_WATCHING': '视频观看',
         'MATERIAL_READING': '阅读材料',
-        'PPT_VIEW': 'PPT浏览'
+        'PPT_VIEW': 'PPT浏览',
+        'EXAM_QUIZ': '试卷答题'
       }
       return typeMap[type] || type
     },

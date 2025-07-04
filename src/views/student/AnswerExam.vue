@@ -113,8 +113,8 @@ export default {
       try {
         await api.post('/submissions/submit/answers', payload)
         this.$message?.success('提交成功') || alert('提交成功')
-        this.$router.push('/student')
-      } catch (err) {
+        this.$router.back()
+            } catch (err) {
         const msg = err?.response?.data?.message || err?.message || '提交失败'
         this.$message?.error(msg) || alert(msg)
       }

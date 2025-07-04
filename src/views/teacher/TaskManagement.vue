@@ -205,7 +205,7 @@ async handleGrading(task, submission) {
     // 获取该学生提交的手动批改题
     try {
       const res = await api.get(`/grading/manual-questions/${submission.submissionId}`);
-      const manualQuestions = res.data;
+      const manualQuestions = res;
 
       if (!manualQuestions || manualQuestions.length === 0) {
         // 没有主观题，自动批改
@@ -227,26 +227,51 @@ submission.graded = true;
       alert('批改初始化失败');
     }
   } else {
-    // 章节作业 / 报告上传
-    const score = prompt('请输入该学生得分:');
-    if (!score || isNaN(score)) {
-      alert('请输入有效的分数');
+    // 章节作业/报告上传
+    // 确保任务有maxScore属性
+    if (typeof task.maxScore === 'undefined') {
+      alert('无法获取任务总分信息');
       return;
     }
 
+    const maxScore = task.maxScore;
+    let validScore = false;
+    let scoreNum = 0;
+
+    // 使用do-while循环替代while(true)
+    do {
+      const scoreInput = prompt(`请输入该学生得分（0-${maxScore}分）:`);
+      
+      // 用户取消输入
+      if (scoreInput === null) return;
+      
+      // 验证输入
+      scoreNum = parseFloat(scoreInput);
+      
+      if (isNaN(scoreNum)) {
+        alert('请输入有效的数字');
+        continue;
+      }
+      
+      if (scoreNum < 0 || scoreNum > maxScore) {
+        alert(`分数必须在0-${maxScore}之间`);
+        continue;
+      }
+      
+      validScore = true;
+    } while (!validScore);
+
     try {
-       await api.put(`/grading/grade-works`, null, {
+      await api.put(`/grading/grade-works`, null, {
         params: {
           submission_id: submission.submissionId,
-          grade: parseFloat(score),
+          grade: scoreNum,
           feedback: '老师手动批改'
         }
       });
-      console.log(Number(score));
       alert('批改成功');
-// 更新当前 submission 状态为已批改
-submission.graded = true;
-
+      // 更新当前 submission 状态为已批改
+      submission.graded = true;
     } catch (err) {
       console.error('批改失败', err);
       alert('批改失败');
@@ -266,9 +291,21 @@ submission.graded = true;
         let submissions = [];
         try {
           const subRes = await api.get(`/submissions/getSubmissions/${task.taskId}`);
-          submissions = subRes || [];
+          submissions = (subRes || []).map(sub => ({
+            ...sub,
+            // 判断 grade 字段是否为有效数字以标记已批改状态
+            graded: typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
+          }));
         } catch (e) {
           console.warn(`获取任务 ${task.taskId} 的提交失败：`, e);
+        }
+
+        try {
+          const detailRes = await api.get(`/teacher/tasks/${task.taskId}`);
+          task.maxScore = detailRes.data.maxScore; // 添加maxScore字段
+        } catch (e) {
+          console.warn(`获取任务${task.taskId}详情失败:`, e);
+          task.maxScore = 100; // 默认值
         }
 
         return {

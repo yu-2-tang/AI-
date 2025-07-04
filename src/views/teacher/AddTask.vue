@@ -1,5 +1,7 @@
 <template>
   <div class="add-task">
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">← 返回</button>
     <h2>发布新任务</h2>
     <div v-if="task.type === 'EXAM_QUIZ'" class="btn-group">
       <button @click="goToGenerateExam" class="btn generate-btn">生成试卷</button>
@@ -424,7 +426,15 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
 .title-row {
   display: flex;
   justify-content: space-between;

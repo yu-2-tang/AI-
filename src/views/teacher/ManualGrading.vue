@@ -4,7 +4,7 @@
 
     <!-- 客观题答案 -->
     <div v-if="autoQuestions.length > 0" class="question-section">
-      <h3>客观题</h3>
+      <h3>客观题 (每题2分)</h3>
       <div v-for="(q, i) in autoQuestions" :key="q.questionId" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
         <div class="question-content">
@@ -16,19 +16,24 @@
 
     <!-- 主观题答案 -->
     <div v-if="manualQuestions.length > 0" class="question-section">
-      <h3>主观题</h3>
+      <h3>主观题 (每题5分)</h3>
       <div v-for="(q, i) in manualQuestions" :key="q.questionId" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
         <div class="question-content">
           <p class="question-text">{{ q.questionText }}</p>
           <p>学生答案：{{ q.answers.join(', ') }}</p>
-          <input
-            type="number"
-            min="0"
-            placeholder="请输入得分"
-            v-model.number="grades[q.questionId]"
-            class="score-input"
-          />
+          <div class="score-input-container">
+            <input
+              type="number"
+              min="0"
+              max="5"
+              step="0.5"
+              placeholder="请输入得分 (0-5)"
+              v-model.number="grades[q.recordId]"
+              class="score-input"
+            />
+            <span class="max-score">/ 5分</span>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +65,10 @@ export default {
         const res = await api.get(`/grading/manual-questions/${this.submissionId}`);
         const manualList = res;
 
+        // 检查是否有需要手动批改的题目
         if (manualList.length === 0) {
+          // 修改这里：先获取所有题目再尝试自动批改
+          await this.fetchAllQuestions();
           alert('没有需要手动批改的题目，系统将尝试自动批改');
           await api.post(`/grading/auto/${this.submissionId}`);
           alert('自动批改已完成');
@@ -68,13 +76,41 @@ export default {
           return;
         }
 
+        // 获取所有题目的内容
+        const questionContents = {};
+        await Promise.all(
+          manualList.map(async (record) => {
+            try {
+              const questionRes = await api.get(`/question/get/${record.questionId}`);
+              questionContents[record.questionId] = questionRes.content || '题目内容缺失';
+            } catch (err) {
+              console.error(`获取题目${record.questionId}内容失败`, err);
+              questionContents[record.questionId] = '题目内容缺失';
+            }
+          })
+        );
+
         // 拆分客观题和主观题
         this.manualQuestions = manualList.map(record => ({
+          recordId: record.recordId,
           questionId: record.questionId,
-          questionText: record.questionText || '题目内容缺失',
+          questionText: questionContents[record.questionId],
           answers: record.answers || []
         }));
 
+
+        // 新增：获取所有题目（包括客观题）
+        await this.fetchAllQuestions();
+
+      } catch (err) {
+        console.error('加载提交记录失败', err);
+        alert('加载提交记录失败');
+      }
+    },
+    
+    // 新增方法：获取所有题目（包括客观题）
+    async fetchAllQuestions() {
+      try {
         // 拉取全部提交答案（包括客观题）
         const allRes = await api.get(`/submissions/getSubmissions/${this.submissionId}`);
         const allAnswers = allRes[0]?.answerRecords || [];
@@ -87,19 +123,30 @@ export default {
           questionText: record.questionText || '题目内容缺失',
           answers: record.answers || []
         }));
-
       } catch (err) {
-        console.error('加载提交记录失败', err);
-        alert('加载提交记录失败');
+        console.error('加载客观题失败', err);
       }
     },
     getStudentAnswer(q) {
       return q.answers ? q.answers.join(', ') : '未作答';
     },
     async submitGrades() {
-      const questionGrades = Object.entries(this.grades).map(([questionId, score]) => ({
-        questionId,
-        score: Number(score)
+      // 验证分数范围
+      for (const [recordId, score] of Object.entries(this.grades)) {
+        if (score === null || score === undefined) {
+          alert('请填写所有主观题的得分');
+          return;
+        }
+        if (score < 0 || score > 5) {
+          alert(`分数必须在0-5分之间，当前第${this.getQuestionNumber(recordId)}题得分为${score}`);
+          return;
+        }
+      }
+
+      const questionGrades = Object.entries(this.grades).map(([recordId, score]) => ({
+        recordId,
+        score: Number(score),
+        feedback: ''
       }));
 
       if (questionGrades.length === 0) {

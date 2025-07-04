@@ -12,7 +12,6 @@
           <div class="resource-card" v-for="res in course.resources" :key="res.resourceId">
             <h4>{{ res.name }}</h4>
             <p>类型：{{ formatResourceType(res.type) }}</p>
-            <p>上传人：{{ res.uploader }}</p>
             <p>上传时间：{{ formatDate(res.uploadTime) }}</p>
             <div class="resource-actions">
               <button @click="viewResource(res)" class="primary-btn">查看</button>

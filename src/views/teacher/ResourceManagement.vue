@@ -1,5 +1,8 @@
 <template>
   <div class="resource-mgmt">
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">← 返回</button>
+
     <h2>资源管理 - {{ courseName }}</h2>
 
     <!-- 上传资源区域 -->
@@ -440,15 +443,31 @@ export default {
       return (bytes / 1048576).toFixed(1) + ' MB';
     },
     formatResourceType(type) {
-      const typeMap = {
-        'PDF': 'PDF文档',
-        'PPT': 'PPT演示文稿',
-        'VIDEO': '视频',
-        'DOCUMENT': '文档',
-        'IMAGE': '图片'
-      };
-      return typeMap[type] || type;
-    },
+  const typeMap = {
+    // 显示名称映射
+    'PDF': 'PDF文档',
+    'PPT': 'PPT演示文稿',
+    'VIDEO': '视频',
+    'DOCUMENT': '文档',
+    'IMAGE': '图片',
+
+    // MIME 类型映射
+    'application/pdf': 'PDF文档',
+    'application/msword': '文档',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '文档',
+    'application/vnd.ms-powerpoint': 'PPT演示文稿',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT演示文稿',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '文档',
+    'image/jpeg': '图片',
+    'image/png': '图片',
+    'video/mp4': '视频',
+    'video/avi': '视频',
+    'video/x-msvideo': '视频',
+    'video/webm': '视频'
+  };
+
+  return typeMap[type] || type;
+},
     
     // 新增：获取文件扩展名的辅助方法
     getFileExtension(fileName) {
@@ -620,5 +639,14 @@ tbody tr:hover {
   background: #4a90e2;
   color: white;
   border-color: #4a90e2;
+}
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
 }
 </style>

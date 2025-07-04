@@ -1,5 +1,7 @@
 <template>
   <div class="knowledge-point-mgmt">
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">← 返回</button>
     <h2>知识点管理 - {{ courseName }}</h2>
 
     <!-- 添加知识点区域 -->
@@ -231,6 +233,15 @@ viewPoint: {
   border-radius: 4px;
   cursor: pointer;
   margin-right: 5px;
+}
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
 }
 
 .knowledge-point-list {

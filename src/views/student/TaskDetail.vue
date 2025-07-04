@@ -12,49 +12,66 @@
         <p><strong>任务描述:</strong> {{ task.description }}</p>
       </div>
 
-      <input
-        v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)"
-        type="file"
-        ref="fileInput"
-        multiple
-        style="display: none"
-        @change="handleFileChange"
-      />
+      <!-- 文件提交类 -->
+      <div v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)">
+        <input
+          type="file"
+          ref="fileInput"
+          multiple
+          style="display: none"
+          @change="handleFileChange"
+        />
+        <button
+          :disabled="isCompleted"
+          @click="triggerFileInput"
+          class="btn primary-btn"
+        >
+          {{ isCompleted ? '已完成' : '提交' }}
+        </button>
+      </div>
 
       <!-- 任务资源 -->
-<div v-if="task.resources && task.resources.length > 0" class="task-resources">
-  <h3>任务资源</h3>
-  <ul>
-    <li v-for="res in task.resources" :key="res.resourceId">
-      {{ res.name }}
-      <button @click="downloadResource(res)">下载</button>
+      <div v-if="task.resources?.length" class="task-resources">
+        <h3>任务资源</h3>
+        <ul>
+          <li v-for="res in task.resources" :key="res.resourceId">
+            {{ res.name }}
+            <button @click="downloadResource(res)">下载</button>
 
-      <!-- 视频资源 -->
-      <template v-if="res.type === 'VIDEO'">
-        <button @click="viewVideo(res)">观看</button>
-      </template>
-
-      <!-- 文档资源 -->
-      <template v-else-if="['DOCUMENT', 'PPT'].includes(res.type)">
-        <button @click="viewPreview(res)">查看</button>
-
-        <button
-          v-if="['PPT_VIEW', 'MATERIAL_READING'].includes(task.type) && !isCompleted"
-          @click="markAsCompleted"
-        >我已完成</button>
-      </template>
-    </li>
-  </ul>
-</div>
-
-<!-- 提交按钮：无论是否有资源都显示 -->
-<div v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)">
-  <button @click="triggerFileInput" class="btn primary-btn">提交</button>
-</div>
+            <template v-if="res.type === 'VIDEO'">
+  <button @click="viewVideo(res)">观看</button>
+  <span v-if="videoProgressMap[res.resourceId]">
+    （已观看 {{ (videoProgressMap[res.resourceId].progress * 100).toFixed(1) }}%）
+  </span>
+  <span v-if="videoProgressMap[res.resourceId]?.isFinished" style="color: green; margin-left: 10px">
+    ✅ 已完成
+  </span>
+</template>
 
 
+            <template v-else-if="['DOCUMENT', 'PPT'].includes(res.type)">
+              <button @click="viewPreview(res)">查看</button>
+              <button
+                v-if="['PPT_VIEW', 'MATERIAL_READING'].includes(task.type)"
+                :disabled="isCompleted"
+                @click="markAsCompleted"
+              >
+                {{ isCompleted ? '已完成' : '我已完成' }}
+              </button>
+            </template>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 考试任务 -->
       <div v-if="task.type === 'EXAM_QUIZ'">
-        <button class="btn primary-btn" @click="startExam">开始答题</button>
+        <button
+          class="btn primary-btn"
+          :disabled="isCompleted"
+          @click="startExam"
+        >
+          {{ isCompleted ? '已完成' : '开始答题' }}
+        </button>
       </div>
     </div>
 
@@ -75,10 +92,73 @@ export default {
       task: null,
       isLoading: true,
       isCompleted: false,
-      selectedFiles: []
+      selectedFiles: [],
+      videoProgressMap: {} // key 是 resourceId，value 是 { progress, isFinished }
     }
   },
   methods: {
+    async fetchVideoProgressForResources() {
+  if (!this.task || !this.task.resources) return;
+
+  const results = {};
+
+  for (const res of this.task.resources) {
+    if (res.type !== 'VIDEO') continue;
+
+    try {
+      const { data } = await axios.get(`/video-progress/${res.resourceId}`);
+      const videoLength = res.duration || 1;
+      const watched = data?.totalWatched || 0;
+      const progress = Math.min(watched / videoLength, 1);
+      
+      // 检查是否达到90%并自动标记
+      if (progress >= 0.9 && !this.isCompleted) {
+        await this.markAsCompleted();
+      }
+      
+      results[res.resourceId] = {
+        progress,
+        isFinished: progress >= 0.9
+      };
+    } catch (e) {
+      console.warn(`无法获取视频 ${res.resourceId} 的观看进度`, e);
+    }
+  }
+
+  this.videoProgressMap = results;
+},
+
+    async fetchTask() {
+      try {
+        const res = await axios.get(`/student/tasks/${this.id}`)
+        this.task = res.data?.data || res.data
+      } catch (err) {
+        console.error('加载任务失败', err)
+        alert(err.response?.data?.message || '加载任务失败')
+      } finally {
+        this.isLoading = false
+      }
+    },
+    async checkSubmissionStatus() {
+      try {
+        console.log('我的提交状态:', this.isCompleted)
+        const courseId = this.task?.courseId
+        if (!courseId) return
+
+        const res = await axios.get(`/submissions/get_submissions_of_course/${courseId}`)
+        const submissions = res || []      
+
+        const mySubmission = submissions.find(sub => sub.taskId === (this.task.taskId || this.id))
+        console.log('我的提交:', submissions)
+        console.log(this.id)
+         console.log('我的提交:', mySubmission)
+        this.isCompleted = !!mySubmission
+        console.log('我的提交状态:', this.isCompleted)
+      } catch (e) {
+        console.warn('检查提交状态失败', e)
+        this.isCompleted = false
+      }
+    },
     async markAsCompleted() {
       const taskId = this.task.taskId || this.id
       const token = localStorage.getItem('token')
@@ -96,18 +176,15 @@ export default {
         alert(err.response?.data?.message || '提交失败')
       }
     },
-
     triggerFileInput() {
       this.$refs.fileInput.click()
     },
-
     handleFileChange(event) {
       const files = event.target.files
       if (files.length === 0) return
       this.selectedFiles = Array.from(files)
       this.submitFiles()
     },
-
     async submitFiles() {
       if (!this.selectedFiles.length) {
         alert('请选择要提交的文件')
@@ -129,7 +206,7 @@ export default {
             Authorization: token ? `Bearer ${token}` : undefined
           }
         })
-
+        this.isCompleted = true
         alert('提交成功')
         this.selectedFiles = []
       } catch (err) {
@@ -137,19 +214,6 @@ export default {
         alert(err.response?.data?.message || '提交失败')
       }
     },
-
-    async fetchTask() {
-      try {
-        const res = await axios.get(`/student/tasks/${this.id}`)
-        this.task = res.data?.data || res.data
-      } catch (err) {
-        console.error('加载任务失败', err)
-        alert(err.response?.data?.message || '加载任务失败')
-      } finally {
-        this.isLoading = false
-      }
-    },
-
     displayTaskType(type) {
       const map = {
         CHAPTER_HOMEWORK: '章节作业',
@@ -161,7 +225,6 @@ export default {
       }
       return map[type] || type
     },
-
     async downloadResource(resource) {
       try {
         const token = localStorage.getItem('token')
@@ -187,25 +250,36 @@ export default {
         alert('资源下载失败: ' + (err.message || '未知错误'))
       }
     },
-
-    viewVideo(res) {
-      this.$router.push({ name: 'VideoPlayer', params: { resourceId: res.resourceId } })
-    },
-
+    // TaskDetail.vue
+viewVideo(res) {
+  this.$router.push({ 
+    name: 'VideoPlayer', 
+    params: { resourceId: res.resourceId },
+    query: { taskId: this.id } // 传递任务ID
+  })
+},
     viewPreview(res) {
       this.$router.push({ name: 'ResourcePreview', params: { resourceId: res.resourceId } })
     },
-
     startExam() {
+      localStorage.setItem('justSubmittedExam', this.id)
       this.$router.push({ name: 'AnswerExam', params: { taskId: this.id } })
     }
   },
-  mounted() {
-    this.fetchTask()
+  async mounted() {    
+    await this.fetchTask()    
+    await this.checkSubmissionStatus()
+    await this.fetchVideoProgressForResources()
+
+
+    const justSubmitted = localStorage.getItem('justSubmittedExam')
+    if (justSubmitted === this.id) {
+      await this.checkSubmissionStatus()
+      localStorage.removeItem('justSubmittedExam')
+    }
   }
 }
 </script>
-
 
 <style scoped>
 .back-btn {

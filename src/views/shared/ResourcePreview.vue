@@ -1,5 +1,7 @@
 <template>
   <div class="resource-preview">
+    <!-- 返回按钮 -->
+    <button class="back-btn" @click="$router.back()">← 返回</button>
     <h2>资源预览</h2>
 
     <div v-if="loading">加载中...</div>
@@ -142,7 +144,15 @@ export default {
   max-width: 1000px;
   margin: 0 auto;
 }
-
+.back-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
 .error-container {
   display: flex;
   flex-direction: column;
