@@ -142,7 +142,15 @@ export default {
             trigger: 'item',
             formatter: function(params) {
               if (params.dataType === 'node') {
-                return `${params.data.name}<br/>ID: ${params.data.id}`
+                // 显示知识点名称和描述，而不是ID
+                const node = params.data;
+                let content = `<strong>${node.name}</strong>`;
+                if (node.description) {
+                  content += `<br/>${node.description}`;
+                } else {
+                  content += `<br/>暂无描述`;
+                }
+                return content;
               } else if (params.dataType === 'edge') {
                 return `${params.data.source} → ${params.data.target}<br/>关系: ${params.data.type || '关联'}`
               }
@@ -166,6 +174,7 @@ export default {
               data: nodes.map(n => ({
                 id: n.id,
                 name: n.name || `节点${n.id}`,
+                description: n.description || n.content || '', // 添加描述字段
                 symbolSize: 50,
                 itemStyle: {
                   color: '#4CAF50'
