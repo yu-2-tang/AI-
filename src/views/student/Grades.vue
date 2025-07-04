@@ -9,8 +9,9 @@
       <h4>任务成绩</h4>
       <ul v-if="course.tasks && course.tasks.length">
         <li v-for="task in course.tasks" :key="task.taskId">
-          {{ task.title }}：{{ task.myScore !== null ? task.myScore + ' 分' : '未提交或未批改' }}
-        </li>
+  {{ task.title }}：{{ task.statusText }}
+</li>
+
       </ul>
       <p v-else>暂无任务</p>
 
@@ -151,14 +152,19 @@ export default {
 
           // 匹配任务成绩
           const scoredTasks = tasks.map(task => {
-            const submission = submissions.find(
-              sub => sub.taskId === task.taskId
-            )
-            return {
-              ...task,
-              myScore: submission?.finalGrade ?? null
-            }
-          })
+  const submission = submissions.find(sub => sub.taskId === task.taskId)
+  let statusText = '未提交'
+  if (submission) {
+    statusText = submission.finalGrade !== null ? `${submission.finalGrade} 分` : '未批改'
+  }
+
+  return {
+    ...task,
+    myScore: submission?.finalGrade ?? null,
+    statusText
+  }
+})
+
 
           // 获取课程反馈
           let feedback = ''

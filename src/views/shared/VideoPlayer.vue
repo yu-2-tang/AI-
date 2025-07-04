@@ -101,10 +101,10 @@ export default {
     async fetchProgress() {
       try {
         const res = await api.get(`/video-progress/${this.resourceId}`);
-        if (res && res.data) {
-          this.lastPosition = res.data.lastPosition || 0;
-          this.totalWatched = res.data.totalWatched || 0;
-          this.segments = res.data.segments || [];
+        if (res) {
+          this.lastPosition = res.lastPosition || 0;
+          this.totalWatched = res.totalWatched || 0;
+          this.segments = res.segments || [];
         }
       } catch (e) {
         // 没有记录也不报错
@@ -314,14 +314,11 @@ export default {
       
       await this.fetchVideoUrl();
     },
-    async markTaskAsCompleted() {
+    // 修改后的正确代码
+async markTaskAsCompleted() {
   try {
-    const token = localStorage.getItem('token');
-    await axios.put(`http://localhost:8082/api/submissions/complete/${this.taskId}`, {}, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined
-      }
-    });
+    // 使用已导入的api对象，并修正URL路径
+    await api.put(`/submissions/complete/${this.taskId}`);
     console.log('任务已自动标记为完成');
   } catch (err) {
     console.error('自动标记任务失败:', err);

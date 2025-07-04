@@ -480,15 +480,26 @@ export default {
     
     // 新增：与ResourceManagement.vue一致的资源类型格式化方法
     formatResourceType(type) {
-      const typeMap = {
-        'PDF': 'PDF文档',
-        'PPT': 'PPT演示文稿',
-        'VIDEO': '视频',
-        'DOCUMENT': '文档',
-        'IMAGE': '图片'
-      };
-      return typeMap[type] || type;
-    },
+  const typeMap = {
+    'PDF': 'PDF文档',
+    'PPT': 'PPT演示文稿',
+    'VIDEO': '视频',
+    'DOCUMENT': '文档',
+    'IMAGE': '图片',
+    'application/msword': '文档',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '文档',
+    'application/vnd.ms-powerpoint': 'PPT演示文稿',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPT演示文稿',
+    'application/pdf': 'PDF文档',
+    'image/jpeg': '图片',
+    'image/png': '图片',
+    'video/mp4': '视频',
+    'video/avi': '视频',
+    'video/x-msvideo': '视频'
+  }
+
+  return typeMap[type] || type
+},
     
     // 新增：获取文件扩展名的辅助方法
     getFileExtension(fileName) {

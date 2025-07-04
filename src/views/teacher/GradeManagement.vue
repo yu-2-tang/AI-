@@ -2,84 +2,110 @@
   <div class="grade-mgmt">
     <h2>成绩分析</h2>
 
-    <!-- 成绩统计图表 -->
-    <div ref="chartContainer" class="chart-container"></div>
+    <label>选择课程：
+      <select v-model="selectedCourseId" @change="fetchReport">
+        <option disabled value="">请选择课程</option>
+        <option v-for="c in courses" :key="c.courseId" :value="c.courseId">
+          {{ c.name }}
+        </option>
+      </select>
+    </label>
 
-    <!-- 导出报表按钮 -->
-    <button class="primary-btn" @click="exportReport">导出成绩报表</button>
+    <div v-if="report && report.performers?.length">
+      <table>
+        <thead>
+          <tr>
+            <th>学号</th>
+            <th>姓名</th>
+            <th>得分率</th>
+            <th>班级排名</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="s in report.performers" :key="s.studentNumber">
+            <td>{{ s.studentNumber }}</td>
+            <td>{{ s.studentName }}</td>
+            <td>{{ s.gradeRate.toFixed(2) }}%</td>
+            <td>{{ s.rank }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else>
+      <p>暂无学生成绩数据</p>
+    </div>
+
+    <button class="primary-btn" @click="exportReport" :disabled="!selectedCourseId">
+      导出成绩报表
+    </button>
   </div>
 </template>
 
 <script>
-import * as echarts from 'echarts'
 import axios from '@/axios'
 
 export default {
-  name: 'GradeManagement',
   data() {
     return {
-      chartInstance: null,
-      summaryData: []
+      courses: [],
+      selectedCourseId: '',
+      report: null
     }
   },
   mounted() {
-    this.fetchSummary()
+    this.fetchCourses()
   },
   methods: {
-    async fetchSummary() {
+    async fetchCourses() {
       try {
-        const res = await axios.get('/grade/summary')
-        this.summaryData = res.data.data || []
-        this.renderChart()
+        const res = await axios.get('/teacher/courses')
+        this.courses = res.data || []
       } catch (err) {
-        console.error('获取成绩汇总失败', err)
-        alert('加载成绩数据失败')
+        console.error('获取课程失败', err)
       }
     },
-    renderChart() {
-      if (!this.chartInstance) {
-        this.chartInstance = echarts.init(this.$refs.chartContainer)
+    async fetchReport() {
+      if (!this.selectedCourseId) return
+      try {
+        const res = await axios.get(`/reports/course/${this.selectedCourseId}`)
+        this.report = res || { performers: [] }
+      } catch (err) {
+        console.error('获取成绩报告失败', err)
+        this.report = null
       }
-
-      const option = {
-        title: { text: '课程平均成绩分析', left: 'center' },
-        tooltip: {},
-        xAxis: {
-          type: 'category',
-          data: this.summaryData.map(item => item.courseName),
-          axisLabel: { rotate: 45 }
-        },
-        yAxis: {
-          type: 'value',
-          name: '平均分'
-        },
-        series: [{
-          data: this.summaryData.map(item => item.avgGrade),
-          type: 'bar',
-          itemStyle: { color: '#4a90e2' }
-        }]
-      }
-
-      this.chartInstance.setOption(option)
     },
     async exportReport() {
-      try {
-        const res = await axios.get('/report/export-grades', {
-          responseType: 'blob'
-        })
+  if (!this.selectedCourseId) return;
 
-        const blob = new Blob([res])
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = '成绩报表.xlsx'
-        a.click()
-        window.URL.revokeObjectURL(url)
-      } catch (err) {
-        console.error('导出失败', err)
-        alert('导出成绩报表失败')
-      }
+  try {
+    const res = await axios.get(`/reports/export/${this.selectedCourseId}`, {
+      responseType: 'blob'
+    });
+
+    // 确保是 Blob 类型
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    // 🚨 这里用 blob.size 检查，而不是 res.data.size
+    if (blob.size === 0) {
+      alert('导出的文件为空');
+      return;
     }
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '成绩报表.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('导出失败:', err);
+    alert('导出失败');
+  }
+}
+
+
   }
 }
 </script>
@@ -88,22 +114,22 @@ export default {
 .grade-mgmt {
   padding: 20px;
 }
-.chart-container {
-  height: 400px;
-  margin-bottom: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 10px;
-}
 .primary-btn {
   background: #4a90e2;
   color: #fff;
   border: none;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 4px;
+  margin-top: 16px;
   cursor: pointer;
 }
-.primary-btn:hover {
-  opacity: 0.9;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+table th, table td {
+  padding: 8px;
+  border: 1px solid #ccc;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="preview-exam">
-    <h2>试卷预览：{{ exam.taskCode }}（{{ modeLabel[exam.mode] || '未知模式' }}）</h2>
+    <h2>试卷预览：{{ exam.taskCode }}</h2>
 
     <!-- 选择题部分 -->
     <div v-if="mcQuestions.length > 0" class="question-section">

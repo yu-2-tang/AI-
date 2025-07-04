@@ -110,6 +110,7 @@ export default {
       const videoLength = res.duration || 1;
       const watched = data?.totalWatched || 0;
       const progress = Math.min(watched / videoLength, 1);
+      console.log(`视频 ${res.resourceId} 的观看进度: ${progress}`);
       
       // 检查是否达到90%并自动标记
       if (progress >= 0.9 && !this.isCompleted) {
