@@ -9,17 +9,16 @@
       <h4>任务成绩</h4>
       <ul v-if="course.tasks && course.tasks.length">
         <li v-for="task in course.tasks" :key="task.taskId">
-  {{ task.title }}：{{ task.statusText }}
-</li>
+          {{ task.title }}：{{ task.statusText }}
+        </li>
 
       </ul>
       <p v-else>暂无任务</p>
 
       <!-- 成绩趋势图 -->
       <h4>成绩趋势</h4>
-      <div v-if="course.gradeTrend && course.gradeTrend.scores && course.gradeTrend.scores.length" 
-           :id="'chart-'+course.courseId" 
-           class="grade-trend-chart"></div>
+      <div v-if="course.gradeTrend && course.gradeTrend.scores && course.gradeTrend.scores.length"
+        :id="'chart-' + course.courseId" class="grade-trend-chart"></div>
       <p v-else>未做过任务，暂无成绩</p>
 
       <h4>课程反馈</h4>
@@ -45,19 +44,19 @@ export default {
     renderGradeTrendChart(courseId, trendData) {
       const chartDom = document.getElementById(`chart-${courseId}`);
       if (!chartDom) return;
-      
+
       // 销毁旧实例（如果存在）
       if (this.chartInstances[courseId]) {
         this.chartInstances[courseId].dispose();
       }
-      
+
       const chart = echarts.init(chartDom);
       this.chartInstances[courseId] = chart;
-      
+
       const option = {
         tooltip: {
           trigger: 'axis',
-          formatter: function(params) {
+          formatter: function (params) {
             const data = params[0];
             return `${data.name}<br/>分数：${data.value}分`;
           }
@@ -116,9 +115,9 @@ export default {
           containLabel: true
         }
       };
-      
+
       chart.setOption(option);
-      
+
       // 响应窗口变化
       window.addEventListener('resize', () => {
         chart.resize();
@@ -152,18 +151,18 @@ export default {
 
           // 匹配任务成绩
           const scoredTasks = tasks.map(task => {
-  const submission = submissions.find(sub => sub.taskId === task.taskId)
-  let statusText = '未提交'
-  if (submission) {
-    statusText = submission.finalGrade !== null ? `${submission.finalGrade} 分` : '未批改'
-  }
+            const submission = submissions.find(sub => sub.taskId === task.taskId)
+            let statusText = '未提交'
+            if (submission) {
+              statusText = submission.finalGrade !== null ? `${submission.finalGrade} 分` : '未批改'
+            }
 
-  return {
-    ...task,
-    myScore: submission?.finalGrade ?? null,
-    statusText
-  }
-})
+            return {
+              ...task,
+              myScore: submission?.finalGrade ?? null,
+              statusText
+            }
+          })
 
 
           // 获取课程反馈
@@ -172,15 +171,15 @@ export default {
             const response = await axios.get(`/feedback/${course.courseId}`)
             feedback = response || ''
           } catch (error) {
-            if (error.response?.status === 400 && 
-                error.response.data?.message?.includes('Grade not found')) {
+            if (error.response?.status === 400 &&
+              error.response.data?.message?.includes('Grade not found')) {
               feedback = ''
             } else {
               console.error(`获取课程 ${course.name} 反馈失败:`, error)
               feedback = '获取反馈失败'
             }
           }
-          
+
           // 获取成绩趋势数据
           let gradeTrend = null;
           try {
@@ -217,12 +216,12 @@ export default {
 
       // 等待所有课程处理完成
       const results = await Promise.allSettled(coursePromises)
-      
+
       // 提取成功的课程数据
       this.courseList = results
         .filter(result => result.status === 'fulfilled')
         .map(result => result.value)
-        
+
       // 渲染所有趋势图
       this.$nextTick(() => {
         this.courseList.forEach(course => {
@@ -235,12 +234,6 @@ export default {
     } catch (err) {
       console.error('加载课程与成绩失败:', err)
     }
-  },
-  beforeDestroy() {
-    // 销毁所有图表实例
-    Object.values(this.chartInstances).forEach(chart => {
-      chart.dispose();
-    });
   }
 }
 </script>

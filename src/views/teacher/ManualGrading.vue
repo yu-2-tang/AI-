@@ -1,21 +1,10 @@
 <template>
   <div class="manual-grading">
-    <h2>试卷批改</h2>
-
-    <!-- 客观题答案 -->
-    <div v-if="autoQuestions.length > 0" class="question-section">
-      <h3>客观题 (每题2分)</h3>
-      <div v-for="(q, i) in autoQuestions" :key="q.questionId" class="question-item">
-        <div class="question-number">{{ i + 1 }}.</div>
-        <div class="question-content">
-          <p class="question-text">{{ q.questionText }}</p>
-          <p>学生答案：{{ getStudentAnswer(q) }}</p>
-        </div>
-      </div>
-    </div>
+    <h2>主观题批改</h2>
 
     <!-- 主观题答案 -->
     <div v-if="manualQuestions.length > 0" class="question-section">
+      <h3>客观题已自动批改</h3>
       <h3>主观题 (每题5分)</h3>
       <div v-for="(q, i) in manualQuestions" :key="q.questionId" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
@@ -67,10 +56,6 @@ export default {
 
         // 检查是否有需要手动批改的题目
         if (manualList.length === 0) {
-          // 修改这里：先获取所有题目再尝试自动批改
-          await this.fetchAllQuestions();
-          alert('没有需要手动批改的题目，系统将尝试自动批改');
-          await api.post(`/grading/auto/${this.submissionId}`);
           alert('自动批改已完成');
           this.$router.back();
           return;
@@ -99,32 +84,9 @@ export default {
         }));
 
 
-        // 新增：获取所有题目（包括客观题）
-        await this.fetchAllQuestions();
-
       } catch (err) {
         console.error('加载提交记录失败', err);
         alert('加载提交记录失败');
-      }
-    },
-    
-    // 新增方法：获取所有题目（包括客观题）
-    async fetchAllQuestions() {
-      try {
-        // 拉取全部提交答案（包括客观题）
-        const allRes = await api.get(`/submissions/getSubmissions/${this.submissionId}`);
-        const allAnswers = allRes[0]?.answerRecords || [];
-
-        this.autoQuestions = allAnswers.filter(record => {
-          const type = record.questionType?.toUpperCase();
-          return ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'JUDGE', 'TRUE_FALSE'].includes(type);
-        }).map(record => ({
-          questionId: record.questionId,
-          questionText: record.questionText || '题目内容缺失',
-          answers: record.answers || []
-        }));
-      } catch (err) {
-        console.error('加载客观题失败', err);
       }
     },
     getStudentAnswer(q) {

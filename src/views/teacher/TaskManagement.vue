@@ -78,11 +78,18 @@
                         <td>{{ task.type }}</td>
                         <td>{{ submission.submitTime }}</td>
                         <td>
-                          <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
-                          <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
-                          <button class="primary-btn" @click="handleGrading(task, submission)">批改</button>
-                          <span v-if="submission.graded" style="color: green; margin-left: 8px;">已批改</span>
-                        </td>
+  <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
+  <template v-if="task.type !== 'EXAM_QUIZ'">
+    <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
+    <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
+  </template>
+
+  <!-- 所有任务类型都显示“批改”按钮 -->
+  <button class="primary-btn" @click="handleGrading(task, submission)">批改</button>
+
+  <span v-if="submission.graded" style="color: green; margin-left: 8px;">已批改</span>
+</td>
+
                       </tr>
                       <tr v-if="!task.submissions || !task.submissions.length">
                         <td colspan="4" style="text-align: center; color: gray;">暂无提交记录</td>
@@ -167,7 +174,7 @@ export default {
 
   if (task.showSubmissions && !task.submissions) {
     try {
-      const res = await api.get(`/submissions/getSubmissions/${task.taskId}`);
+      const res = await api.get(`/submissions/get_submissions_of_task/${task.taskId}`);
 
       // 初始化 graded 字段
       const submissions = res.map(sub => ({
@@ -184,21 +191,54 @@ export default {
   }
 },
 viewSubmission(submission) {
-  const fileId = Array.isArray(submission.fileId) ? submission.fileId[0] : submission.fileId;
+  const fileId = Array.isArray(submission.files) ? submission.files[0] : submission.files;
+
   if (!fileId) {
     alert('未上传文件');
     return;
   }
-  this.viewResource({ resourceId: fileId, name: '学生提交文件', type: 'DOCUMENT' });
+
+  // 判断是否是路径型的文件（学生上传）
+  if (fileId.startsWith('/')) {
+    const fullUrl = `http://localhost:8082/api/files${fileId}`;
+    window.open(fullUrl, '_blank'); // 新窗口打开预览
+    return;
+  }
+
+  // 否则是资源 ID（老师资源）
+  this.$router.push({
+    name: 'ResourcePreview',
+    params: { resourceId: fileId }
+  });
 },
 
+
 downloadSubmission(submission) {
-  const fileId = Array.isArray(submission.fileId) ? submission.fileId[0] : submission.fileId;
+  const fileId = Array.isArray(submission.files) ? submission.files[0] : submission.files;
   if (!fileId) {
     alert('未上传文件');
     return;
   }
-  this.downloadResource({ resourceId: fileId, name: '学生提交文件', type: 'DOCUMENT' });
+
+  // 判断是否是路径
+  if (fileId.startsWith('/')) {
+    const url = `http://localhost:8082/api/files${fileId}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '学生提交文件');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return;
+  }
+
+  // 否则走老师资源方式
+  const resource = {
+    resourceId: fileId,
+    name: '学生提交文件',
+    type: 'DOCUMENT'
+  };
+  this.downloadResource(resource);
 },
 async handleGrading(task, submission) {
   if (task.type === 'EXAM_QUIZ') {
@@ -290,7 +330,7 @@ submission.graded = true;
       const tasks = await Promise.all(taskList.map(async task => {
         let submissions = [];
         try {
-          const subRes = await api.get(`/submissions/getSubmissions/${task.taskId}`);
+          const subRes = await api.get(`/submissions/get_submissions_of_task/${task.taskId}`);
           submissions = (subRes || []).map(sub => ({
             ...sub,
             // 判断 grade 字段是否为有效数字以标记已批改状态
