@@ -5,7 +5,7 @@
     <!-- 主观题答案 -->
     <div v-if="manualQuestions.length > 0" class="question-section">
       <h3>客观题已自动批改</h3>
-      <h3>主观题 (每题5分)</h3>
+      <h3>主观题</h3>
       <div v-for="(q, i) in manualQuestions" :key="q.questionId" class="question-item">
         <div class="question-number">{{ i + 1 }}.</div>
         <div class="question-content">
@@ -14,14 +14,14 @@
           <div class="score-input-container">
             <input
               type="number"
-              min="0"
-              max="5"
+              :min="0"
+              :max="q.maxScore"
               step="0.5"
-              placeholder="请输入得分 (0-5)"
+              :placeholder="`请输入得分 (0-${q.maxScore})`"
               v-model.number="grades[q.recordId]"
               class="score-input"
             />
-            <span class="max-score">/ 5分</span>
+            <span class="max-score">/ {{ q.maxScore }}分</span>
           </div>
         </div>
       </div>
@@ -61,16 +61,19 @@ export default {
           return;
         }
 
-        // 获取所有题目的内容
+        // 获取所有题目的内容和分值
         const questionContents = {};
+        const questionScores = {};
         await Promise.all(
           manualList.map(async (record) => {
             try {
               const questionRes = await api.get(`/question/get/${record.questionId}`);
               questionContents[record.questionId] = questionRes.content || '题目内容缺失';
+              questionScores[record.questionId] = questionRes.score || questionRes.points || 5; // 默认5分
             } catch (err) {
               console.error(`获取题目${record.questionId}内容失败`, err);
               questionContents[record.questionId] = '题目内容缺失';
+              questionScores[record.questionId] = 5; // 默认5分
             }
           })
         );
@@ -80,7 +83,8 @@ export default {
           recordId: record.recordId,
           questionId: record.questionId,
           questionText: questionContents[record.questionId],
-          answers: record.answers || []
+          answers: record.answers || [],
+          maxScore: questionScores[record.questionId]
         }));
 
 
@@ -92,6 +96,10 @@ export default {
     getStudentAnswer(q) {
       return q.answers ? q.answers.join(', ') : '未作答';
     },
+    getQuestionNumber(recordId) {
+      const index = this.manualQuestions.findIndex(q => q.recordId == recordId);
+      return index >= 0 ? index + 1 : '未知';
+    },
     async submitGrades() {
       // 验证分数范围
       for (const [recordId, score] of Object.entries(this.grades)) {
@@ -99,8 +107,13 @@ export default {
           alert('请填写所有主观题的得分');
           return;
         }
-        if (score < 0 || score > 5) {
-          alert(`分数必须在0-5分之间，当前第${this.getQuestionNumber(recordId)}题得分为${score}`);
+        
+        // 找到对应题目的最大分值
+        const question = this.manualQuestions.find(q => q.recordId == recordId);
+        const maxScore = question ? question.maxScore : 5;
+        
+        if (score < 0 || score > maxScore) {
+          alert(`分数必须在0-${maxScore}分之间，当前第${this.getQuestionNumber(recordId)}题得分为${score}`);
           return;
         }
       }

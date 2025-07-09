@@ -26,37 +26,36 @@
                 <td>{{ task.type }}</td>
                 <td>{{ task.deadline }}</td>
                 <td class="operation-cell">
-  <div class="btn-group">
-    <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
-    
-    <!-- 占位按钮：当 EXAM_QUIZ 时显示禁用按钮，确保对齐 -->
-    <button 
-      v-if="task.type !== 'EXAM_QUIZ'" 
-      class="outline-btn" 
-      @click="downloadTask(task.taskId)"
-    >下载</button>
-    
-    <button 
-      v-else 
-      class="outline-btn disabled-btn"
-      disabled
-    >下载</button>
+                  <div class="btn-group">
+                    <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
+                    
+                    <!-- 占位按钮：当 EXAM_QUIZ 时显示禁用按钮，确保对齐 -->
+                    <button 
+                      v-if="task.type !== 'EXAM_QUIZ'" 
+                      class="outline-btn" 
+                      @click="downloadTask(task.taskId)"
+                    >下载</button>
+                    
+                    <button 
+                      v-else 
+                      class="outline-btn disabled-btn"
+                      disabled
+                    >下载</button>
 
-    <button class="primary-btn" @click="openEditModal(course.courseId, task.taskId)">编辑</button>
-    <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
-  </div>
+                    <button class="primary-btn" @click="openEditModal(course.courseId, task.taskId)">编辑</button>
+                    <button class="danger-btn" @click="deleteTask(course.courseId, task.taskId)">删除</button>
+                  </div>
 
-  <div class="btn-group">
-    <button
-      v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
-      class="outline-btn"
-      @click="toggleSubmissions(task)"
-    >
-      {{ task.showSubmissions ? '隐藏提交' : '查看提交' }}
-    </button>
-  </div>
-</td>
-
+                  <div class="btn-group">
+                    <button
+                      v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
+                      class="outline-btn"
+                      @click="toggleSubmissions(task)"
+                    >
+                      {{ task.showSubmissions ? '隐藏提交' : '查看提交' }}
+                    </button>
+                  </div>
+                </td>
               </tr>
 
               <!-- 提交记录展示区域 -->
@@ -78,18 +77,25 @@
                         <td>{{ task.type }}</td>
                         <td>{{ submission.submitTime }}</td>
                         <td>
-  <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
-  <template v-if="task.type !== 'EXAM_QUIZ'">
-    <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
-    <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
-  </template>
+                          <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
+                          <template v-if="task.type !== 'EXAM_QUIZ'">
+                            <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
+                            <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
+                          </template>
 
-  <!-- 所有任务类型都显示“批改”按钮 -->
-  <button class="primary-btn" @click="handleGrading(task, submission)">批改</button>
+                          <!-- 只有需要批改的任务类型才显示"批改"按钮 -->
+                          <button 
+                            v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
+                            :class="submission.fullyGraded ? 'disabled-btn' : 'primary-btn'"
+                            :disabled="submission.fullyGraded"
+                            @click="!submission.fullyGraded && handleGrading(task, submission)"
+                          >{{ submission.fullyGraded ? '已批改' : '批改' }}</button>
 
-  <span v-if="submission.graded" style="color: green; margin-left: 8px;">已批改</span>
-</td>
-
+                          <!-- 显示批改状态 -->
+                          <span v-if="getGradingStatus(task, submission).show" :style="getGradingStatus(task, submission).style">
+                            {{ getGradingStatus(task, submission).text }}
+                          </span>
+                        </td>
                       </tr>
                       <tr v-if="!task.submissions || !task.submissions.length">
                         <td colspan="4" style="text-align: center; color: gray;">暂无提交记录</td>
@@ -143,8 +149,6 @@
     </div>
   </div>
 </template>
-
-
 <script>
 import api from '@/axios'
 import axios from 'axios'
@@ -176,10 +180,12 @@ export default {
     try {
       const res = await api.get(`/submissions/get_submissions_of_task/${task.taskId}`);
 
-      // 初始化 graded 字段
       const submissions = res.map(sub => ({
         ...sub,
-        graded: sub.status === 'graded' // 状态为 graded 时标记
+        // 更详细的批改状态判断
+        objectiveGraded: sub.objectiveGraded || false, // 客观题是否已批改
+        subjectiveGraded: sub.subjectiveGraded || false, // 主观题是否已批改
+        fullyGraded: sub.status === 'graded' && typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
       }));
 
       this.$set(task, 'submissions', submissions);
@@ -252,8 +258,10 @@ async handleGrading(task, submission) {
         if (confirm('无主观题，是否自动批改客观题？')) {
           await api.post(`/grading/auto/${submission.submissionId}`);
           alert('自动批改完成');
-submission.graded = true;
-
+          // 更新状态：客观题已批改，且无主观题时表示完全批改
+          submission.objectiveGraded = true;
+          submission.subjectiveGraded = true; // 无主观题时设为true
+          submission.fullyGraded = true;
         }
       } else {
         // 有主观题，跳转手动批改页面
@@ -311,7 +319,7 @@ submission.graded = true;
       });
       alert('批改成功');
       // 更新当前 submission 状态为已批改
-      submission.graded = true;
+      submission.fullyGraded = true;
     } catch (err) {
       console.error('批改失败', err);
       alert('批改失败');
@@ -333,8 +341,10 @@ submission.graded = true;
           const subRes = await api.get(`/submissions/get_submissions_of_task/${task.taskId}`);
           submissions = (subRes || []).map(sub => ({
             ...sub,
-            // 判断 grade 字段是否为有效数字以标记已批改状态
-            graded: typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
+            // 更详细的批改状态判断
+            objectiveGraded: sub.objectiveGraded || false, // 客观题是否已批改
+            subjectiveGraded: sub.subjectiveGraded || false, // 主观题是否已批改
+            fullyGraded: typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
           }));
         } catch (e) {
           console.warn(`获取任务 ${task.taskId} 的提交失败：`, e);
@@ -410,30 +420,13 @@ submission.graded = true;
     },
     // 与ResourceManagement.vue完全一致的资源查看方法
     viewResource(resource) {
-      // 在控制台输出详细的资源调试信息
-      console.group('👁️ 查看资源 - 调试信息');
-      console.log('📄 资源对象:', resource);
-      console.log('🆔 资源ID:', resource.resourceId);
-      console.log('📝 资源名称:', resource.name);
-      console.log('🏷️ 原始资源类型:', resource.type);
-      console.log('🗂️ MIME类型 (如果有):', resource.mimeType || resource.contentType || '未设置');
-      console.log('📊 资源大小:', resource.size, `(${this.formatSize(resource.size)})`);
-      console.log('⏰ 上传时间:', resource.uploadTime);
-      console.log('🔤 类型字符串长度:', resource.type?.length);
-      console.log('📁 文件扩展名:', this.getFileExtension(resource.name));
-      console.log('🔍 类型检测结果:');
-      
+  
       // 详细的类型判断过程
       const isVideoType1 = resource.type === 'VIDEO';
       const isVideoType2 = resource.type === 'video';
       const isVideoType3 = resource.type?.toLowerCase().startsWith('video/');
       const isVideo = isVideoType1 || isVideoType2 || isVideoType3;
-      
-      console.log('  📹 resource.type === "VIDEO":', isVideoType1);
-      console.log('  📹 resource.type === "video":', isVideoType2);
-      console.log('  📹 以"video/"开头:', isVideoType3);
-      console.log('  📹 综合判断为视频:', isVideo);
-      
+   
       // 增强的文档类型检测
       const isStandardDocType = ['PDF', 'DOCUMENT', 'PPT', 'IMAGE'].includes(resource.type);
       const isPdfMime = resource.type?.toLowerCase().startsWith('application/pdf');
@@ -735,10 +728,64 @@ submission.graded = true;
       }
       
       return info;
+    },
+
+    // 获取批改状态显示信息
+    getGradingStatus(task, submission) {
+      // 只有需要批改的任务类型才显示状态
+      const needsGrading = ['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type);
+      
+      if (!needsGrading) {
+        return { show: false };
+      }
+
+      if (task.type === 'EXAM_QUIZ') {
+        // 试卷任务的状态判断
+        if (submission.fullyGraded) {
+          return {
+            show: true,
+            text: '批改完成',
+            style: 'color: green; margin-left: 8px;'
+          };
+        } else if (submission.objectiveGraded && !submission.subjectiveGraded) {
+          return {
+            show: true,
+            text: '客观题已自动批改',
+            style: 'color: orange; margin-left: 8px;'
+          };
+        } else {
+          return { show: false };
+        }
+      } else {
+        // 章节作业和报告任务的状态判断
+        if (submission.fullyGraded) {
+          return {
+            show: true,
+            text: '已批改',
+            style: 'color: green; margin-left: 8px;'
+          };
+        } else {
+          return { show: false };
+        }
+      }
+    },
+
+    handleWindowFocus() {
+      // 当窗口重新获得焦点时，重新加载数据以更新批改状态
+      // 这样可以捕获从手动批改页面返回的情况
+      if (this.$route.name === 'TeacherTaskManagement') {
+        this.fetchCoursesAndTasks();
+      }
     }
   },
   mounted() {
-    this.fetchCoursesAndTasks()
+    this.fetchCoursesAndTasks();
+    
+    // 监听从手动批改页面返回
+    window.addEventListener('focus', this.handleWindowFocus);
+  },
+  beforeUnmount() {
+    window.removeEventListener('focus', this.handleWindowFocus);
   }
 }
 </script>
