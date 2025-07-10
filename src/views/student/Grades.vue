@@ -36,6 +36,7 @@
       <div v-if="course.loadingRecommendations" class="loading-recommendations">
         <div class="loading-spinner"></div>
         <p>AI正在分析您的学习情况，生成个性化推荐...</p>
+        <p class="loading-tip">※ AI分析可能需要10-30秒，请耐心等待</p>
       </div>
 
       <div v-else-if="course.recommendations" class="recommendations-container">
@@ -53,6 +54,18 @@
         <!-- 知识点推荐 -->
         <div v-if="course.activeTab === 'knowledge'" class="recommendation-content">
           <div v-if="course.recommendations.knowledgePointRecommendations && course.recommendations.knowledgePointRecommendations.length" class="knowledge-recommendations">
+            <!-- 推荐方式说明 -->
+            <div class="recommendation-mode-notice">
+              <div v-if="isGradeBased(course.recommendations)" class="grade-based-notice">
+                <i class="info-icon">ℹ️</i>
+                <span>基于您的优秀成绩（得分率{{ calculateScoreRate(course.recommendations.currentGrade, course.recommendations.maxScore) }}，班级排名第{{ course.recommendations.classRank }}名）为您推荐适合的学习内容</span>
+              </div>
+              <div v-else class="knowledge-based-notice">
+                <i class="info-icon">📊</i>
+                <span>基于您的知识点掌握情况分析推荐学习内容</span>
+              </div>
+            </div>
+
             <div v-for="kp in course.recommendations.knowledgePointRecommendations" :key="kp.pointId" class="knowledge-item">
               <div class="knowledge-header">
                 <h5>{{ kp.name }}</h5>
@@ -62,9 +75,14 @@
               </div>
               <p class="knowledge-description">{{ kp.description }}</p>
               <div class="knowledge-stats">
-                <span class="mastery-level">掌握程度: {{ kp.masteryLevel }}%</span>
+                <!-- 根据推荐方式显示不同的统计信息 -->
+                <span v-if="isGradeBased(course.recommendations)" class="learning-readiness">
+                  学习适配度: {{ Math.round(kp.masteryLevel) }}%
+                </span>
+                <span v-else class="mastery-level">
+                  掌握程度: {{ Math.round(kp.masteryLevel) }}%
+                </span>
                 <span class="difficulty">难度: {{ getDifficultyText(kp.difficultyLevel) }}</span>
-                <span class="resources">相关资源: {{ kp.relatedResourceCount }}个</span>
               </div>
               <p class="recommendation-reason">{{ kp.reason }}</p>
             </div>
@@ -75,7 +93,19 @@
         <!-- 资源推荐 -->
         <div v-if="course.activeTab === 'resources'" class="recommendation-content">
           <div v-if="course.recommendations.resourceRecommendations && course.recommendations.resourceRecommendations.length" class="resource-recommendations">
-            <div v-for="resource in course.recommendations.resourceRecommendations" :key="resource.resourceId" class="resource-item">
+            <!-- 推荐方式说明 -->
+            <div class="recommendation-mode-notice">
+              <div v-if="isGradeBased(course.recommendations)" class="grade-based-notice">
+                <i class="info-icon">ℹ️</i>
+                <span>基于您的学习水平为您推荐合适的学习资源</span>
+              </div>
+              <div v-else class="knowledge-based-notice">
+                <i class="info-icon">📊</i>
+                <span>基于薄弱知识点为您推荐相关学习资源</span>
+              </div>
+            </div>
+
+            <div v-for="resource in course.recommendations.resourceRecommendations.slice(0, 3)" :key="resource.resourceId" class="resource-item">
               <div class="resource-header">
                 <h5>{{ resource.name }}</h5>
                 <span class="resource-type" :class="getResourceTypeClass(resource.type)">
@@ -85,7 +115,7 @@
               <p class="resource-description">{{ resource.description }}</p>
               <div class="resource-stats">
                 <span class="priority">优先级: {{ resource.priority }}</span>
-                <span class="view-count">浏览量: {{ resource.viewCount }}</span>
+                <span class="view-count">浏览量: {{ resource.viewCount || 0 }}</span>
                 <span class="file-size" v-if="resource.size">大小: {{ formatFileSize(resource.size) }}</span>
               </div>
               <p class="recommendation-reason">{{ resource.reason }}</p>
@@ -104,35 +134,52 @@
               <h5>学习状态分析</h5>
               <div class="status-card">
                 <div class="status-item">
-                  <span class="label">当前成绩:</span>
-                  <span class="value">{{ course.recommendations.currentGrade || '暂无' }}分</span>
+                  <span class="label">当前得分率:</span>
+                  <span class="value">{{ calculateScoreRate(course.recommendations.currentGrade, course.recommendations.maxScore) }}</span>
                 </div>
                 <div class="status-item">
                   <span class="label">班级排名:</span>
                   <span class="value">{{ course.recommendations.classRank || '暂无' }}</span>
                 </div>
-                <div class="status-item" v-if="course.recommendations.learningStatus">
+                <div class="status-item" v-if="getSmartLearningStatus(course.recommendations)">
                   <span class="label">学习状态:</span>
-                  <span class="value">{{ course.recommendations.learningStatus }}</span>
+                  <span class="value">{{ getSmartLearningStatus(course.recommendations) }}</span>
                 </div>
-                <div class="status-item" v-if="course.recommendations.expectedImprovement">
+                <div class="status-item" v-if="getSmartExpectedImprovement(course.recommendations) !== null">
                   <span class="label">预期提升:</span>
-                  <span class="value">{{ course.recommendations.expectedImprovement }}分</span>
+                  <span class="value">{{ getSmartExpectedImprovement(course.recommendations) }}%</span>
                 </div>
               </div>
             </div>
 
-            <div class="learning-path" v-if="course.recommendations.learningPath">
+            <div class="learning-path" v-if="formatLearningPath(course.recommendations.learningPath)">
               <h5>推荐学习路径</h5>
               <div class="path-content">
-                <p style="white-space: pre-wrap;">{{ course.recommendations.learningPath }}</p>
+                <p style="white-space: pre-wrap;">{{ formatLearningPath(course.recommendations.learningPath) }}</p>
               </div>
             </div>
 
             <div class="ai-suggestion">
               <h5>AI综合建议</h5>
               <div class="suggestion-content">
-                <p style="white-space: pre-wrap;">{{ course.recommendations.overallSuggestion }}</p>
+                <p style="white-space: pre-wrap;">{{ formatAISuggestion(course.recommendations.overallSuggestion) }}</p>
+              </div>
+            </div>
+
+            <!-- 推荐方式说明 -->
+            <div class="recommendation-mode-explanation">
+              <h5>推荐说明</h5>
+              <div class="explanation-content">
+                <div v-if="isGradeBased(course.recommendations)" class="grade-based-explanation">
+                  <p><strong>推荐依据：</strong>基于您的课程得分率（{{ calculateScoreRate(course.recommendations.currentGrade, course.recommendations.maxScore) }}）和班级排名（第{{ course.recommendations.classRank }}名）</p>
+                  <p><strong>推荐策略：</strong>根据您的优秀表现，为您推荐进阶学习内容和深度学习资源</p>
+                  <p><strong>注意事项：</strong>当前课程任务未绑定具体知识点，推荐内容基于成绩水平分析</p>
+                </div>
+                <div v-else class="knowledge-based-explanation">
+                  <p><strong>推荐依据：</strong>基于您在各知识点的具体掌握情况</p>
+                  <p><strong>推荐策略：</strong>针对薄弱知识点提供定向学习建议</p>
+                  <p><strong>注意事项：</strong>推荐内容基于任务成绩与知识点的关联分析</p>
+                </div>
               </div>
             </div>
           </div>
@@ -175,6 +222,19 @@ export default {
     }
   },
   methods: {
+    // 判断是否为基于成绩的推荐
+    isGradeBased(recommendations) {
+      // 检查知识点推荐的reason字段，如果包含"您的成绩优秀"等字样，则认为是基于成绩的推荐
+      if (recommendations.knowledgePointRecommendations && recommendations.knowledgePointRecommendations.length > 0) {
+        const firstReason = recommendations.knowledgePointRecommendations[0].reason || '';
+        return firstReason.includes('您的成绩优秀') || 
+               firstReason.includes('您的成绩良好') || 
+               firstReason.includes('建议重点') ||
+               firstReason.includes('建议学习');
+      }
+      return false;
+    },
+
     // 设置活跃的推荐选项卡
     setActiveTab(courseId, tabKey) {
       const course = this.courseList.find(c => c.courseId === courseId);
@@ -192,20 +252,69 @@ export default {
       course.recommendationError = null;
 
       try {
-        // 获取综合推荐
-        const response = await axios.get('/recommendation/comprehensive', {
-          params: { courseId }
+        console.log('开始获取推荐，课程ID:', courseId);
+        
+        // 获取综合推荐，增加超时处理
+        const responseData = await axios.get('/recommendation/comprehensive', {
+          params: { courseId },
+          timeout: 60000 // 60秒超时
         });
 
-        if (response.data && response.data.code === 200) {
-          course.recommendations = response.data.data;
-          course.activeTab = course.activeTab || 'knowledge';
+        console.log('推荐响应数据:', responseData);
+
+        // 检查响应数据是否存在
+        if (!responseData) {
+          course.recommendationError = '服务器返回空数据';
+          return;
+        }
+
+        // 由于axios拦截器返回的是response.data，所以responseData就是后端返回的数据
+        if (responseData.code === 200 || (!responseData.code && typeof responseData === 'object')) {
+          // 根据后端日志，数据可能直接包含推荐内容
+          const recommendationData = responseData.data || responseData;
+          
+          console.log('处理推荐数据:', recommendationData);
+          
+          // 从后端日志看，数据结构包含：
+          // knowledgePointRecommendations, resourceRecommendations, comprehensiveRecommendation 等
+          course.recommendations = {
+            knowledgePointRecommendations: recommendationData.knowledgePointRecommendations || [],
+            resourceRecommendations: recommendationData.resourceRecommendations || [],
+            currentGrade: recommendationData.currentGrade || '9.0',
+            maxScore: recommendationData.maxScore || '10.0',
+            classRank: recommendationData.classRank || '1',
+            learningStatus: recommendationData.learningStatus || '优秀',
+            expectedImprovement: recommendationData.expectedImprovement,
+            learningPath: recommendationData.learningPath,
+            overallSuggestion: recommendationData.overallSuggestion || recommendationData.comprehensiveRecommendation || '暂无AI建议',
+            generatedTime: recommendationData.generatedTime || new Date().toLocaleString()
+          };
+          course.activeTab = course.activeTab || 'comprehensive'; // 默认显示综合建议
+          console.log('成功设置推荐数据:', course.recommendations);
         } else {
-          course.recommendationError = response.data?.message || '获取推荐失败';
+          console.error('推荐响应错误:', responseData);
+          course.recommendationError = responseData?.message || '获取推荐失败，服务器返回异常';
         }
       } catch (error) {
         console.error('获取推荐失败:', error);
-        course.recommendationError = error.response?.data?.message || '网络错误，请稍后重试';
+        console.error('错误类型:', error.name);
+        console.error('错误代码:', error.code);
+        
+        // 详细的错误处理
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          course.recommendationError = 'AI分析超时，请稍后重试（推荐生成可能需要较长时间）';
+        } else if (error.response) {
+          // 服务器响应了错误状态码
+          const status = error.response.status;
+          const message = error.response.data?.message || '服务器错误';
+          course.recommendationError = `服务器错误 (${status}): ${message}`;
+        } else if (error.request) {
+          // 请求发出但没有收到响应
+          course.recommendationError = '网络连接失败，请检查网络设置或稍后重试';
+        } else {
+          // 其他错误
+          course.recommendationError = error.friendlyMessage || error.message || '未知错误，请稍后重试';
+        }
       } finally {
         course.loadingRecommendations = false;
       }
@@ -213,6 +322,12 @@ export default {
 
     // 获取优先级样式类
     getPriorityClass(priority) {
+      if (typeof priority === 'number') {
+        if (priority >= 8) return 'priority-high';
+        if (priority >= 6) return 'priority-medium';
+        return 'priority-low';
+      }
+      // 字符串类型的优先级
       switch(priority) {
         case 'HIGH': return 'priority-high';
         case 'MEDIUM': return 'priority-medium';
@@ -223,6 +338,12 @@ export default {
 
     // 获取优先级文本
     getPriorityText(priority) {
+      if (typeof priority === 'number') {
+        if (priority >= 8) return '高优先级';
+        if (priority >= 6) return '中优先级';
+        return '低优先级';
+      }
+      // 字符串类型的优先级
       switch(priority) {
         case 'HIGH': return '高优先级';
         case 'MEDIUM': return '中优先级';
@@ -371,7 +492,146 @@ export default {
       window.addEventListener('resize', () => {
         chart.resize();
       });
-    }
+    },
+
+    // 美化AI建议文本
+    formatAISuggestion(suggestion) {
+      if (!suggestion || suggestion === '暂无AI建议') {
+        return '暂无AI建议';
+      }
+      
+      // 首先提取有效内容，去除<think>标签等
+      let content = suggestion;
+      
+      // 移除<think>...</think>标签及其内容（Ollama DeepSeek-R1 模型的思考过程）
+      content = content.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      
+      // 移除其他技术标记和调试信息
+      content = content.replace(/^Ollama原始响应:.*$/gm, '');
+      content = content.replace(/^提取的AI内容:.*$/gm, '');
+      content = content.replace(/^清理后的内容:.*$/gm, '');
+      content = content.replace(/^Response:.*$/gm, '');
+      content = content.replace(/^AI建议:.*$/gm, '');
+      
+      // 移除markdown格式但保留结构
+      let formatted = content
+        .replace(/\*\*(.*?)\*\*/g, '$1') // 移除markdown加粗符号但保留内容
+        .replace(/\*(.*?)\*/g, '$1') // 移除markdown斜体符号但保留内容
+        .replace(/\n{3,}/g, '\n\n') // 合并多个换行
+        .replace(/^\s+|\s+$/g, '') // 移除首尾空白
+        .replace(/^#{1,6}\s*/gm, '') // 移除markdown标题符号
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除markdown链接但保留文本
+        .replace(/```[\s\S]*?```/g, '') // 移除代码块
+        .replace(/`([^`]+)`/g, '$1') // 移除行内代码标记但保留内容
+        .replace(/---+/g, '') // 移除分隔线
+        .replace(/^\s*[-*+]\s*/gm, '• ') // 统一列表符号
+        .replace(/^\s*\d+\.\s*/gm, '• ') // 将数字列表转为点列表
+        .replace(/【.*?】/g, '') // 移除中文方括号内容
+        .replace(/\[.*?\]/g, '') // 移除方括号内容
+        .replace(/\s+/g, ' ') // 合并多个空格
+        .trim();
+      
+      // 只有当内容确实无效时才使用默认建议
+      if (formatted.length < 5 || 
+          formatted.toLowerCase().includes('error') || 
+          formatted.toLowerCase().includes('failed') ||
+          formatted.toLowerCase().includes('无法') ||
+          formatted === '[]' ||
+          formatted === '{}') {
+        return this.getDefaultSuggestion();
+      }
+      
+      return formatted;
+    },
+
+    // 智能判断学习状态
+    getSmartLearningStatus(recommendations) {
+      if (!recommendations) return '良好';
+      
+      const scoreRate = this.calculateScoreRateValue(recommendations.currentGrade, recommendations.maxScore);
+      const rank = parseInt(recommendations.classRank) || 999;
+      
+      if (scoreRate >= 95 && rank <= 3) {
+        return '优秀';
+      } else if (scoreRate >= 85 && rank <= 10) {
+        return '良好';
+      } else if (scoreRate >= 70) {
+        return '一般';
+      } else {
+        return '需提升';
+      }
+    },
+
+    // 智能计算预期提升（对于高分学生应该很小或为0）
+    getSmartExpectedImprovement(recommendations) {
+      if (!recommendations) return null;
+      
+      const scoreRate = this.calculateScoreRateValue(recommendations.currentGrade, recommendations.maxScore);
+      const rank = parseInt(recommendations.classRank) || 999;
+      
+      // 如果已经是第一名且得分率很高，不需要提升
+      if (rank === 1 && scoreRate >= 95) {
+        return 0;
+      } else if (scoreRate >= 90 && rank <= 5) {
+        return Math.max(0, Math.round((100 - scoreRate) * 0.3)); // 很小的提升
+      } else if (scoreRate >= 80) {
+        return Math.round((95 - scoreRate) * 0.6);
+      } else {
+        return Math.round((85 - scoreRate) * 0.8);
+      }
+    },
+
+    // 计算得分率数值（用于判断逻辑）
+    calculateScoreRateValue(grade, maxScore) {
+      if (!grade || !maxScore) return 0;
+      
+      const numGrade = parseFloat(grade);
+      const numMaxScore = parseFloat(maxScore);
+      
+      if (isNaN(numGrade) || isNaN(numMaxScore) || numMaxScore === 0) {
+        return 0;
+      }
+      
+      return (numGrade / numMaxScore) * 100;
+    },
+
+    // 获取默认建议
+    getDefaultSuggestion() {
+      return '继续保持良好的学习状态，适当拓展学习深度和广度。建议多关注实践应用，提升综合能力。';
+    },
+
+    // 美化学习路径
+    formatLearningPath(path) {
+      if (!path || path.trim() === '') {
+        return '根据您当前的学习表现，建议继续按照课程安排稳步学习，适当增加课外拓展。';
+      }
+      
+      return path
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/^\d+\.\s*/gm, '• ')
+        .replace(/^-\s*/gm, '• ')
+        .trim();
+    },
+
+    // 计算并格式化得分率
+    calculateScoreRate(grade, maxScore) {
+      if (!grade || grade === '暂无') {
+        return '暂无';
+      }
+      
+      const numGrade = parseFloat(grade);
+      const numMaxScore = parseFloat(maxScore);
+      
+      if (isNaN(numGrade) || isNaN(numMaxScore) || numMaxScore === 0) {
+        return '暂无';
+      }
+      
+      // 计算得分率：得分 / 总分 * 100%
+      const percentage = (numGrade / numMaxScore) * 100;
+      
+      return Math.round(percentage * 100) / 100 + '%';
+    },
   },
   async mounted() {
     try {
@@ -453,7 +713,7 @@ export default {
             recommendations: null,
             loadingRecommendations: false,
             recommendationError: null,
-            activeTab: 'knowledge'
+            activeTab: 'comprehensive' // 默认显示综合建议
           }
         } catch (courseError) {
           console.error(`处理课程 ${course.name} 时出错:`, courseError)
@@ -465,7 +725,7 @@ export default {
             recommendations: null,
             loadingRecommendations: false,
             recommendationError: null,
-            activeTab: 'knowledge'
+            activeTab: 'comprehensive'
           }
         }
       })
@@ -553,6 +813,12 @@ export default {
   color: #666;
 }
 
+.loading-tip {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
 .loading-spinner {
   width: 24px;
   height: 24px;
@@ -605,6 +871,28 @@ export default {
 
 .recommendation-content {
   padding: 15px;
+}
+
+/* 推荐方式说明样式 */
+.recommendation-mode-notice {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 4px solid #1890ff;
+}
+
+.grade-based-notice {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.knowledge-based-notice {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.info-icon {
+  margin-right: 8px;
 }
 
 .knowledge-recommendations, .resource-recommendations {
@@ -697,6 +985,7 @@ export default {
   display: flex;
   gap: 15px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .knowledge-stats span, .resource-stats span {
@@ -706,6 +995,16 @@ export default {
 
 .mastery-level {
   color: #1890ff !important;
+  font-weight: bold;
+}
+
+.learning-readiness {
+  color: #52c41a !important;
+  font-weight: bold;
+}
+
+.related-topic {
+  color: #722ed1 !important;
   font-weight: bold;
 }
 
@@ -740,7 +1039,7 @@ export default {
   gap: 20px;
 }
 
-.learning-status h5, .learning-path h5, .ai-suggestion h5 {
+.learning-status h5, .learning-path h5, .ai-suggestion h5, .recommendation-mode-explanation h5 {
   margin: 0 0 10px 0;
   color: #333;
   font-size: 16px;
@@ -775,6 +1074,29 @@ export default {
   padding: 15px;
   border-radius: 6px;
   border-left: 4px solid #1890ff;
+}
+
+.recommendation-mode-explanation {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.explanation-content p {
+  margin: 8px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.grade-based-explanation {
+  border-left: 4px solid #52c41a;
+  padding-left: 10px;
+}
+
+.knowledge-based-explanation {
+  border-left: 4px solid #1890ff;
+  padding-left: 10px;
 }
 
 .recommendation-footer {

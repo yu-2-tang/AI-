@@ -7,7 +7,7 @@ const baseURL = process.env.NODE_ENV === 'production'
 
 const api = axios.create({
   baseURL: baseURL,
-  timeout: 10000
+  timeout: 30000 // 增加到30秒，因为AI推荐可能需要更长时间
 });
 
 

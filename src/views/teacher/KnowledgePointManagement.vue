@@ -14,6 +14,15 @@
         <label>知识点描述</label>
         <textarea v-model="newKnowledgePoint.description" placeholder="输入知识点描述"></textarea>
       </div>
+      <div class="form-group">
+        <label>难度等级</label>
+        <select v-model="newKnowledgePoint.difficultylevel">
+          <option value="">请选择难度等级</option>
+          <option value="EASY">简单</option>
+          <option value="MEDIUM">中等</option>
+          <option value="HARD">困难</option>
+        </select>
+      </div>
       <button class="btn primary-btn" @click="addKnowledgePoint">添加知识点</button>
     </div>
 
@@ -24,6 +33,7 @@
           <tr>
             <th>名称</th>
             <th>描述</th>
+            <th>难度等级</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -31,6 +41,11 @@
           <tr v-for="point in knowledgePoints" :key="point.pointId">
             <td>{{ point.name }}</td>
             <td>{{ point.description }}</td>
+            <td>
+              <span class="difficulty-badge" :class="getDifficultyClass(point.difficultylevel)">
+                {{ getDifficultyLabel(point.difficultylevel) }}
+              </span>
+            </td>
             <td>
               <button class="btn outline-btn" @click="viewKnowledgePoint(point)">查看</button>
               <button class="btn warning-btn" @click="editKnowledgePoint(point)">编辑</button>
@@ -49,25 +64,36 @@
         <input v-model="editKnowledgePointData.name" required />
         <label>知识点描述</label>
         <textarea v-model="editKnowledgePointData.description" required></textarea>
+        <label>难度等级</label>
+        <select v-model="editKnowledgePointData.difficultylevel" required>
+          <option value="">请选择难度等级</option>
+          <option value="EASY">简单</option>
+          <option value="MEDIUM">中等</option>
+          <option value="HARD">困难</option>
+        </select>
         <div class="modal-actions">
           <button @click="updateKnowledgePoint">保存</button>
           <button class="danger-btn" @click="showEditForm = false">取消</button>
         </div>
       </div>
     </div>
-   <!-- 查看知识点详情弹窗 -->
-<div v-if="showViewModal" class="modal-overlay">
-  <div class="modal">
-    <h3>知识点详情</h3>
-    <p><strong>名称：</strong>{{ viewPoint.name }}</p>
-    <p><strong>描述：</strong>{{ viewPoint.description }}</p>
-    <div class="modal-actions">
-      <button class="btn primary-btn" @click="showViewModal = false">关闭</button>
+    
+    <!-- 查看知识点详情弹窗 -->
+    <div v-if="showViewModal" class="modal-overlay">
+      <div class="modal">
+        <h3>知识点详情</h3>
+        <p><strong>名称：</strong>{{ viewPoint.name }}</p>
+        <p><strong>描述：</strong>{{ viewPoint.description }}</p>
+        <p><strong>难度等级：</strong>
+          <span class="difficulty-badge" :class="getDifficultyClass(viewPoint.difficultylevel)">
+            {{ getDifficultyLabel(viewPoint.difficultylevel) }}
+          </span>
+        </p>
+        <div class="modal-actions">
+          <button class="btn primary-btn" @click="showViewModal = false">关闭</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-
-
   </div>
 </template>
 
@@ -83,23 +109,45 @@ export default {
       knowledgePoints: [],
       newKnowledgePoint: {
         name: "",
-        description: ""
+        description: "",
+        difficultylevel: ""
       },
       showEditForm: false,
       editKnowledgePointData: {
         pointId: null,
         name: "",
-        description: ""
+        description: "",
+        difficultylevel: ""
       },
       showViewModal: false,
-viewPoint: {
-  name: '',
-  description: ''
-}
-
+      viewPoint: {
+        name: '',
+        description: '',
+        difficultylevel: ''
+      }
     };
   },
   methods: {
+    // 获取难度等级对应的CSS类
+    getDifficultyClass(difficulty) {
+      switch(difficulty) {
+        case 'EASY': return 'difficulty-easy';
+        case 'MEDIUM': return 'difficulty-medium';
+        case 'HARD': return 'difficulty-hard';
+        default: return 'difficulty-unknown';
+      }
+    },
+    
+    // 获取难度等级的中文标签
+    getDifficultyLabel(difficulty) {
+      switch(difficulty) {
+        case 'EASY': return '简单';
+        case 'MEDIUM': return '中等';
+        case 'HARD': return '困难';
+        default: return '未知';
+      }
+    },
+    
     async fetchCourseInfo() {
       try {
         const res = await axios.get(`/teacher/courses/${this.courseId}`);
@@ -108,44 +156,53 @@ viewPoint: {
         console.error("获取课程信息失败", err);
       }
     },
+    
     async fetchKnowledgePoints() {
       try {
         const res = await axios.get(`/teacher/courses/${this.courseId}/knowledge-points`);
-        this.knowledgePoints = res.data || [];
+        this.knowledgePoints = res.data.data || res.data || [];
       } catch (err) {
         console.error("获取知识点失败", err);
       }
     },
+    
     async addKnowledgePoint() {
-      if (!this.newKnowledgePoint.name || !this.newKnowledgePoint.description) {
-        alert("请填写知识点名称和描述！");
+      if (!this.newKnowledgePoint.name || !this.newKnowledgePoint.description || !this.newKnowledgePoint.difficultylevel) {
+        alert("请填写知识点名称、描述和难度等级！");
         return;
       }
       try {
         await axios.post(`/teacher/courses/${this.courseId}/knowledge-points`, this.newKnowledgePoint);
         alert("添加成功");
         this.fetchKnowledgePoints();
-        this.newKnowledgePoint = { name: "", description: "" };
+        this.newKnowledgePoint = { name: "", description: "", difficultylevel: "" };
       } catch (err) {
         console.error("添加失败", err);
-        alert("添加失败");
+        alert("添加失败：" + (err.response?.data?.message || err.message));
       }
     },
+    
     async viewKnowledgePoint(point) {
-  try {
-    const res = await axios.get(`/teacher/knowledge-points/${point.pointId}`);
-    this.viewPoint = res.data || {};
-    this.showViewModal = true;
-  } catch (err) {
-    console.error("获取知识点详情失败", err);
-    alert("获取知识点详情失败");
-  }
-},
+      try {
+        const res = await axios.get(`/teacher/knowledge-points/${point.pointId}`);
+        this.viewPoint = res.data.data || res.data || {};
+        this.showViewModal = true;
+      } catch (err) {
+        console.error("获取知识点详情失败", err);
+        alert("获取知识点详情失败");
+      }
+    },
+    
     editKnowledgePoint(point) {
       this.editKnowledgePointData = { ...point };
       this.showEditForm = true;
     },
+    
     async updateKnowledgePoint() {
+      if (!this.editKnowledgePointData.name || !this.editKnowledgePointData.description || !this.editKnowledgePointData.difficultylevel) {
+        alert("请填写知识点名称、描述和难度等级！");
+        return;
+      }
       try {
         await axios.put(
           `/teacher/knowledge-points/${this.editKnowledgePointData.pointId}`,
@@ -156,9 +213,10 @@ viewPoint: {
         this.fetchKnowledgePoints();
       } catch (err) {
         console.error("更新失败", err);
-        alert("更新失败");
+        alert("更新失败：" + (err.response?.data?.message || err.message));
       }
     },
+    
     async deleteKnowledgePoint(point) {
       if (!confirm(`确认删除知识点 "${point.name}" 吗？`)) return;
       try {
@@ -167,7 +225,7 @@ viewPoint: {
         this.fetchKnowledgePoints();
       } catch (err) {
         console.error("删除失败", err);
-        alert("删除失败");
+        alert("删除失败：" + (err.response?.data?.message || err.message));
       }
     }
   },
@@ -210,6 +268,12 @@ viewPoint: {
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
 }
 
 .primary-btn {
@@ -223,6 +287,11 @@ viewPoint: {
   color: #4a90e2;
 }
 
+.warning-btn {
+  background: #f39c12;
+  color: white;
+}
+
 .danger-btn {
   background: #e74c3c;
   color: white;
@@ -233,7 +302,13 @@ viewPoint: {
   border-radius: 4px;
   cursor: pointer;
   margin-right: 5px;
+  border: none;
 }
+
+.btn:hover {
+  opacity: 0.9;
+}
+
 .back-btn {
   background: #4a90e2;
   color: white;
@@ -242,6 +317,10 @@ viewPoint: {
   border-radius: 4px;
   margin-bottom: 20px;
   cursor: pointer;
+}
+
+.back-btn:hover {
+  opacity: 0.9;
 }
 
 .knowledge-point-list {
@@ -268,23 +347,34 @@ tbody tr:hover {
   background-color: #f1f1f1;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
+/* 难度等级样式 */
+.difficulty-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
-.pagination button {
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  background: white;
-  cursor: pointer;
+.difficulty-easy {
+  background-color: #d4edda;
+  color: #155724;
 }
 
-.pagination button.active {
-  background: #4a90e2;
-  color: white;
-  border-color: #4a90e2;
+.difficulty-medium {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.difficulty-hard {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.difficulty-unknown {
+  background-color: #e2e3e5;
+  color: #6c757d;
 }
 
 /* modal 样式 */
@@ -294,30 +384,48 @@ tbody tr:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1000;
 }
 
 .modal {
   background: #fff;
   padding: 20px;
-  width: 400px;
+  width: 500px;
+  max-width: 90vw;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
 .modal input,
-.modal textarea {
+.modal textarea,
+.modal select {
   width: 100%;
   margin-bottom: 15px;
   padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.modal textarea {
+  min-height: 80px;
+  resize: vertical;
 }
 
 .modal label {
   font-weight: bold;
   margin-top: 8px;
+  margin-bottom: 5px;
   display: block;
 }
 
@@ -325,6 +433,41 @@ tbody tr:hover {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 20px;
 }
 
+.modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-actions button:first-child {
+  background: #4a90e2;
+  color: white;
+}
+
+.modal-actions button:first-child:hover {
+  background: #357abd;
+}
+
+.modal-actions .danger-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.modal-actions .danger-btn:hover {
+  background: #c0392b;
+}
+
+/* 详情弹窗特殊样式 */
+.modal p {
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.modal p strong {
+  color: #333;
+}
 </style>
