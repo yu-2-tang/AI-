@@ -14,10 +14,13 @@
         <div class="course-actions">
           <button class="danger-btn" @click="deleteCourse(course.courseId)">删除课程</button>
           <button class="warning-btn" @click="editCourse(course)">编辑课程</button>
-          <router-link
-            :to="{ name: 'CourseDetail', params: { id: course.courseId } }"
-            class="primary-btn"
-          >课程详情</router-link>
+          <button class="primary-btn">
+  <router-link
+    :to="{ name: 'CourseDetail', params: { id: course.courseId } }"
+    style="color: white; text-decoration: none;"
+  >课程详情</router-link>
+</button>
+
           <button class="info-btn" @click="goToResourceManagement(course.courseId)">资源管理</button>
           <button class="info-btn" @click="goToKnowledgePointManagement(course.courseId)">知识点管理</button>
         </div>
@@ -55,7 +58,7 @@
         <textarea v-model="newCourse.description" placeholder="请输入课程描述"></textarea>
 
         <div class="modal-actions">
-          <button @click="createCourse">保存</button>
+          <button class="add-btn" @click="createCourse">保存</button>
           <button class="danger-btn" @click="showAddForm = false">取消</button>
         </div>
       </div>
@@ -85,7 +88,7 @@
         <textarea v-model="editCourseData.description" placeholder="请输入课程描述"></textarea>
 
         <div class="modal-actions">
-          <button @click="updateCourse">保存</button>
+          <button class="add-btn" @click="updateCourse">保存</button>
           <button class="danger-btn" @click="showEditForm = false">取消</button>
         </div>
       </div>
@@ -204,12 +207,11 @@ export default {
   padding: 20px;
 }
 .add-btn {
-  background: #2ecc71;
+  background: #4a90e2;
   color: white;
   border: none;
-  padding: 8px 14px;
-  margin-bottom: 20px;
   border-radius: 4px;
+  padding: 6px 12px;
   cursor: pointer;
 }
 .course-list {
@@ -281,10 +283,23 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
-.modal input, .modal textarea {
+.modal input,
+.modal textarea {
   width: 100%;
+  max-width: 300px;  /* ✅ 控制最大宽度 */
   margin-bottom: 15px;
   padding: 8px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
 }
 .modal label {
   font-weight: bold;
@@ -303,4 +318,5 @@ export default {
   gap: 12px;
   margin-bottom: 40px;
 }
+
 </style>

@@ -70,7 +70,7 @@
 
       <div class="terms-group">
         <input type="checkbox" id="studentTerms" v-model="studentForm.agreeTerms">
-        <label for="studentTerms">我已阅读并同意<router-link to="/terms">《服务条款》</router-link>和<router-link to="/privacy">《隐私政策》</router-link></label>
+        <label for="studentTerms">我已阅读并同意《服务条款》和《隐私政策》</label>
       </div>
 
       <button type="submit" class="register-btn" :disabled="!studentForm.agreeTerms">注册</button>
@@ -131,7 +131,7 @@
 
       <div class="terms-group">
         <input type="checkbox" id="teacherTerms" v-model="teacherForm.agreeTerms">
-        <label for="teacherTerms">我已阅读并同意<router-link to="/terms">《服务条款》</router-link>和<router-link to="/privacy">《隐私政策》</router-link></label>
+        <label for="teacherTerms">我已阅读并同意《服务条款》和《隐私政策》</label>
       </div>
 
       <button type="submit" class="register-btn" :disabled="!teacherForm.agreeTerms">注册</button>
@@ -335,12 +335,18 @@ export default {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.register-btn {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 15px;
+  font-size: 16px;
+}
+
+.form-group input,
+.form-group select {
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 16px;
   transition: border-color 0.3s;
 }
 
@@ -352,7 +358,7 @@ export default {
 
 .form-group select {
   appearance: none;
-  background: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23333'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 10px center;
+  background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23333' viewBox='0 0 24 24'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 10px center;
   background-size: 20px;
 }
 
@@ -363,31 +369,40 @@ export default {
 
 .terms-group {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin: 25px 0;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.terms-group input {
+.terms-group input[type="checkbox"] {
   margin-right: 10px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-.terms-group a {
+.terms-group label {
+  flex: 1;
+  color: #333;
+  word-break: break-word;
+}
+
+.terms-group label a {
   color: #3a7bd5;
   text-decoration: none;
 }
 
-.terms-group a:hover {
+.terms-group label a:hover {
   text-decoration: underline;
 }
 
 .register-btn {
-  width: 100%;
-  padding: 12px;
   background-color: #3a7bd5;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s;

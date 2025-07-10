@@ -5,7 +5,7 @@
     <!-- 搜索栏 -->
     <div class="search-bar">
       <input v-model="keyword" placeholder="按课程名称或编号搜索" />
-      <button class="btn" @click="fetchAllCourses">搜索课程</button>
+      <button class="btn primary" @click="fetchAllCourses">搜索课程</button>
     </div>
 
     <!-- 全部课程 -->
@@ -22,9 +22,9 @@
 
     <!-- 分页控制 -->
     <div class="pagination">
-      <button @click="prevPage" :disabled="page === 1">上一页</button>
-      <span>第 {{ page }} 页</span>
-      <button @click="nextPage" :disabled="page >= totalPages">下一页</button>
+      <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+      <span>第 {{ page }} / {{ totalPages }} 页</span>
+      <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
     </div>
 
     <!-- 我已选课程 -->
@@ -187,4 +187,13 @@ export default {
   gap: 12px;
   margin-bottom: 40px;
 }
+button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
 </style>

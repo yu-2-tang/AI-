@@ -398,14 +398,27 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
-  margin-top: 10px;
 }
+
 .resource-card {
   background: #fff;
   padding: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 260px; /* ⬅️ 增加卡片高度 */
+  box-sizing: border-box;
 }
+
+
+.resource-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+}
+
 .primary-btn {
   background: #4a90e2;
   color: white;
@@ -417,6 +430,7 @@ export default {
   margin-top: 10px;
   cursor: pointer;
 }
+
 .primary-btn:hover {
   background: #357abd;
 }
@@ -424,9 +438,6 @@ export default {
   color: #888;
   font-style: italic;
 }
-.resource-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
+
+
 </style>

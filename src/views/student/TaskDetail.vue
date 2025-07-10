@@ -3,7 +3,7 @@
     <div v-if="isLoading">加载中...</div>
 
     <div v-else-if="task">
-      <button class="back-btn" @click="$router.back()">← 返回</button>
+      <button class="back-btn" @click="$router.back()">返回</button>
       <h2>{{ task.title }} - 任务详情</h2>
 
       <div class="task-info">

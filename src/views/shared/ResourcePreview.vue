@@ -1,7 +1,7 @@
 <template>
   <div class="resource-preview">
     <!-- 返回按钮 -->
-    <button class="back-btn" @click="$router.back()">← 返回</button>
+    <button class="back-btn" @click="$router.back()">返回</button>
     <h2>资源预览</h2>
 
     <div v-if="loading">加载中...</div>

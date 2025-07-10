@@ -58,6 +58,22 @@
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+
+  /* 添加按钮间距 */
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* ✅ 关键：按钮之间的空隙 */
+  flex-wrap: wrap; /* 防止太窄时重叠 */
+}
+
+.primary-btn {
+  background-color: #4a90e2; /* ✅ 修改颜色为指定蓝色 */
+  color: white;
+}
+
+.secondary-btn {
+  background-color: #6c757d;
+  color: white;
 }
 
 .btn {
@@ -69,12 +85,3 @@
   transition: all 0.3s;
 }
 
-.primary-btn {
-  background-color: #007bff;
-  color: white;
-}
-
-.secondary-btn {
-  background-color: #6c757d;
-  color: white;
-}

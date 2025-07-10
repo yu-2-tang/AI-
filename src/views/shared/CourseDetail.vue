@@ -1,7 +1,7 @@
 <template>
   <div class="course-detail-wrapper">
     <!-- 返回按钮 -->
-    <button class="back-btn" @click="$router.back()">← 返回</button>
+    <button class="back-btn" @click="$router.back()">返回</button>
 
     <div class="course-detail">
       <!-- 左侧课程信息 -->

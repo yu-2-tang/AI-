@@ -1,7 +1,7 @@
 <template>
   <div class="resource-mgmt">
     <!-- 返回按钮 -->
-    <button class="back-btn" @click="$router.back()">← 返回</button>
+    <button class="back-btn" @click="$router.back()">返回</button>
 
     <h2>资源管理 - {{ courseName }}</h2>
 
@@ -69,16 +69,13 @@
       </table>
     </div>
 
-    <div class="pagination" v-if="totalPages > 1">
-      <button 
-        v-for="page in totalPages" 
-        :key="page"
-        @click="changePage(page)"
-        :class="{ active: currentPage === page }"
-      >
-        {{ page }}
-      </button>
-    </div>
+    <!-- 分页控制 -->
+<div class="pagination">
+  <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+  <span>第 {{ page }} / {{ totalPages }} 页</span>
+  <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
+</div>
+
   </div>
 </template>
 
@@ -90,6 +87,7 @@ export default {
   name: 'ResourceManagement',
   data() {
     return {
+      page: 1,
       courseId: this.$route.params.courseId,
       courseName: '',
       resources: [],
@@ -101,13 +99,24 @@ export default {
         knowledgePointId: '',
         file: null
       },
-      currentPage: 1,
       pageSize: 10,
       totalPages: 0,
       totalElements: 0
     };
   },
   methods: {
+    nextPage() {
+  if (this.page < this.totalPages) {
+    this.page++;
+    this.fetchResources();
+  }
+},
+prevPage() {
+  if (this.page > 1) {
+    this.page--;
+    this.fetchResources();
+  }
+},
     async fetchCourseInfo() {
       try {
         const res = await api.get(`/teacher/courses/${this.courseId}`);
@@ -116,18 +125,33 @@ export default {
         console.error('获取课程信息失败', err);
       }
     },
-    async fetchResources() {
-      try {
-        const res = await api.get(`/teacher/courses/${this.courseId}/resources`, {
-          params: { page: this.currentPage, size: this.pageSize }
-        });
-        this.resources = res.data.content || [];
-        this.totalElements = res.data.totalElements || 0;
-        this.totalPages = res.data.totalPages || 0;
-      } catch (err) {
-        console.error('获取资源失败', err);
-      }
-    },
+
+async fetchResources() {
+  try {
+    const res = await api.get(`/teacher/courses/${this.courseId}/resources`, {
+      params: { page: this.page, size: this.pageSize }
+    });
+
+    const data = res.data || {};
+
+    // 先更新页数，无论是否非法
+    this.totalPages = data.totalPages || 1;
+    this.totalElements = data.totalElements || 0;
+
+    // 如果当前页比最大页还大，回退一页再请求
+    if (this.page > this.totalPages) {
+      this.page = this.totalPages;
+      return this.fetchResources(); // 🔁 再次加载新页
+    }
+
+    this.resources = data.content || [];
+
+  } catch (err) {
+    console.error('获取资源失败', err);
+  }
+},
+
+
     async fetchKnowledgePoints() {
       try {
         const res = await api.get(`/teacher/courses/${this.courseId}/knowledge-points`);
@@ -318,16 +342,26 @@ export default {
     },
 
     async deleteResource(resource) {
-      if (!confirm(`确定删除资源 "${resource.name}" 吗？`)) return;
-      try {
-        await api.delete(`/teacher/resources/${resource.resourceId}`);
-        alert('删除成功');
-        this.fetchResources();
-      } catch (err) {
-        console.error('删除失败', err);
-        alert('删除失败');
-      }
-    },
+  if (!confirm(`确定删除资源 "${resource.name}" 吗？`)) return;
+
+  try {
+    await api.delete(`/teacher/resources/${resource.resourceId}`);
+    alert('删除成功');
+
+    // 先请求当前页的数据
+    await this.fetchResources();
+
+    // 如果删除后这页没内容，且不是第一页，则回退一页再重新请求
+    if (this.resources.length === 0 && this.page > 1) {
+      this.page--;
+      await this.fetchResources();  // 🔁 关键：再次请求，更新 totalPages
+    }
+
+  } catch (err) {
+    console.error('删除失败', err);
+    alert('删除失败');
+  }
+},
     async updateResource(resource) {
       const newName = prompt('请输入新的资源名称', resource.name);
       if (!newName) return;
@@ -431,9 +465,9 @@ export default {
 
 
     changePage(page) {
-      this.currentPage = page;
-      this.fetchResources();
-    },
+  this.page = page;
+  this.fetchResources();
+},
     formatDate(dateStr) {
       return new Date(dateStr).toLocaleString();
     },
@@ -625,15 +659,20 @@ tbody tr:hover {
 .pagination {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-.pagination button {
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  background: white;
+.pagination-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
   cursor: pointer;
 }
+
 
 .pagination button.active {
   background: #4a90e2;

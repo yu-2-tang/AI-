@@ -1,7 +1,7 @@
 <template>
   <div class="video-player">
     <!-- 返回按钮 -->
-    <button class="back-btn" @click="$router.back()">← 返回</button>
+    <button class="back-btn" @click="$router.back()">返回</button>
     <h2>视频播放</h2>
     
     <video

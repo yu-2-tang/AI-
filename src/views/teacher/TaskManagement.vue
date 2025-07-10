@@ -6,7 +6,7 @@
       <h3>{{ course.name }} ({{ course.courseCode }})</h3>
       <p>学期: {{ course.semester }}</p>
 
-      <button class="primary-btn" @click="goToAddTask(course.courseId)">发布任务</button>
+      <button class="add-task" @click="goToAddTask(course.courseId)">发布任务</button>
 
       <div v-if="course.tasks.length">
         <h4>已发布任务</h4>
@@ -23,7 +23,7 @@
             <template v-for="task in course.tasks" :key="task.taskId">
               <tr>
                 <td>{{ task.title }}</td>
-                <td>{{ task.type }}</td>
+                <td>{{ mapTaskTypeToChinese(task.type) }}</td>
                 <td>{{ task.deadline }}</td>
                 <td class="operation-cell">
                   <div class="btn-group">
@@ -74,28 +74,37 @@
                     <tbody>
                       <tr v-for="submission in task.submissions" :key="submission.submissionId">
                         <td>{{ submission.studentId }}</td>
-                        <td>{{ task.type }}</td>
+                        <td>{{ mapTaskTypeToChinese(task.type) }}</td>
                         <td>{{ submission.submitTime }}</td>
-                        <td>
-                          <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
-                          <template v-if="task.type !== 'EXAM_QUIZ'">
-                            <button class="outline-btn" @click="viewSubmission(submission)">查看</button>
-                            <button class="outline-btn" @click="downloadSubmission(submission)">下载</button>
-                          </template>
+                        
+  <td>
+  <div class="btn-group">
+    <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
+    <template v-if="task.type !== 'EXAM_QUIZ'">
+      <button class="outline-btn small-btn" @click="viewSubmission(submission)">查看</button>
+      <button class="outline-btn small-btn" @click="downloadSubmission(submission)">下载</button>
+    </template>
 
-                          <!-- 只有需要批改的任务类型才显示"批改"按钮 -->
-                          <button 
-                            v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
-                            :class="submission.fullyGraded ? 'disabled-btn' : 'primary-btn'"
-                            :disabled="submission.fullyGraded"
-                            @click="!submission.fullyGraded && handleGrading(task, submission)"
-                          >{{ submission.fullyGraded ? '已批改' : '批改' }}</button>
+    <button 
+      v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
+      :class="['small-btn', submission.fullyGraded ? 'disabled-btn' : 'primary-btn']"
+      :disabled="submission.fullyGraded"
+      @click="!submission.fullyGraded && handleGrading(task, submission)"
+    >
+      {{ submission.fullyGraded ? '已批改' : '批改' }}
+    </button>
 
-                          <!-- 显示批改状态 -->
-                          <span v-if="getGradingStatus(task, submission).show" :style="getGradingStatus(task, submission).style">
-                            {{ getGradingStatus(task, submission).text }}
-                          </span>
-                        </td>
+    <!-- ✅ 状态也作为一个按钮组中的小块显示 -->
+    <span
+      v-if="getGradingStatus(task, submission).show"
+      class="grading-status"
+    >
+      {{ getGradingStatus(task, submission).text }}
+    </span>
+  </div>
+</td>
+
+
                       </tr>
                       <tr v-if="!task.submissions || !task.submissions.length">
                         <td colspan="4" style="text-align: center; color: gray;">暂无提交记录</td>
@@ -325,6 +334,17 @@ async handleGrading(task, submission) {
       alert('批改失败');
     }
   }
+},
+mapTaskTypeToChinese(type) {
+  const map = {
+    CHAPTER_HOMEWORK: '章节作业',
+    REPORT_SUBMISSION: '报告上传',
+    EXAM_QUIZ: '试卷答题',
+    VIDEO_WATCHING: '视频观看',
+    PPT_VIEW: 'PPT浏览',
+    MATERIAL_READING: '阅读材料'
+  };
+  return map[type] || type;
 },
     async fetchCoursesAndTasks() {
   try {
@@ -761,7 +781,7 @@ async handleGrading(task, submission) {
         if (submission.fullyGraded) {
           return {
             show: true,
-            text: '已批改',
+            text: '批改完成',
             style: 'color: green; margin-left: 8px;'
           };
         } else {
@@ -791,6 +811,14 @@ async handleGrading(task, submission) {
 </script>
 
 <style scoped>
+.add-task {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 /* 蓝色边框按钮 */
 .outline-btn {
   background: transparent;
@@ -807,6 +835,36 @@ async handleGrading(task, submission) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* 批改状态样式 - 字体小、颜色根据状态决定、与按钮同一行 */
+.grading-status {
+  font-size: 12px;
+  color: green;
+  margin-left: 8px;
+  align-self: center;
+  white-space: nowrap;
+}
+
+/* 所有嵌套表格按钮统一尺寸 */
+.small-btn {
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+  padding: 6px 0;
+  text-align: center;
+  font-size: 14px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 嵌套表格按钮容器间距 */
+.task-table.nested .btn-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 /* 蓝色填充按钮 */

@@ -50,8 +50,8 @@
     </div>
 
     <div class="actions">
+       <button class="btn primary-btn" @click="submitExam">提交试卷</button>
       <button class="btn secondary-btn" @click="$router.back()">取消</button>
-      <button class="btn primary-btn" @click="submitExam">提交试卷</button>
     </div>
   </div>
 </template>

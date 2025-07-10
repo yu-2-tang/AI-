@@ -111,6 +111,16 @@ export default {
 </script>
 
 <style scoped>
+select {
+  padding: 8px 12px;
+  font-size: 16px;
+  min-width: 180px; /* 控制宽度 */
+  height: 40px; /* 控制高度 */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-left: 4px;
+}
+
 .grade-mgmt {
   padding: 20px;
 }
