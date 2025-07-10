@@ -12,24 +12,6 @@
         <p><strong>任务描述:</strong> {{ task.description }}</p>
       </div>
 
-      <!-- 文件提交类 -->
-      <div v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)">
-        <input
-          type="file"
-          ref="fileInput"
-          multiple
-          style="display: none"
-          @change="handleFileChange"
-        />
-        <button
-          :disabled="isCompleted"
-          @click="triggerFileInput"
-          class="btn primary-btn"
-        >
-          {{ isCompleted ? '已完成' : '提交' }}
-        </button>
-      </div>
-
       <!-- 任务资源 -->
       <div v-if="task.resources?.length" class="task-resources">
         <h3>任务资源</h3>
@@ -40,9 +22,7 @@
 
             <template v-if="res.type === 'VIDEO'">
   <button @click="viewVideo(res)">观看</button>
-  <span v-if="videoProgressMap[res.resourceId]">
-    （已观看 {{ (videoProgressMap[res.resourceId].progress * 100).toFixed(1) }}%）
-  </span>
+ 
   <span v-if="videoProgressMap[res.resourceId]?.isFinished" style="color: green; margin-left: 10px">
     ✅ 已完成
   </span>
@@ -62,7 +42,23 @@
           </li>
         </ul>
       </div>
-
+      <!-- 文件提交类 -->
+      <div v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION'].includes(task.type)">
+        <input
+          type="file"
+          ref="fileInput"
+          multiple
+          style="display: none"
+          @change="handleFileChange"
+        />
+        <button
+          :disabled="isCompleted"
+          @click="triggerFileInput"
+          class="btn primary-btn"
+        >
+          {{ isCompleted ? '已完成' : '提交' }}
+        </button>
+      </div>
       <!-- 考试任务 -->
       <div v-if="task.type === 'EXAM_QUIZ'">
         <button

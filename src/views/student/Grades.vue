@@ -54,7 +54,6 @@
         <!-- 知识点推荐 -->
         <div v-if="course.activeTab === 'knowledge'" class="recommendation-content">
           <div v-if="course.recommendations.knowledgePointRecommendations && course.recommendations.knowledgePointRecommendations.length" class="knowledge-recommendations">
-            <!-- 推荐方式说明 -->
             <div class="recommendation-mode-notice">
               <div v-if="isGradeBased(course.recommendations)" class="grade-based-notice">
                 <i class="info-icon">ℹ️</i>
@@ -75,7 +74,6 @@
               </div>
               <p class="knowledge-description">{{ kp.description }}</p>
               <div class="knowledge-stats">
-                <!-- 根据推荐方式显示不同的统计信息 -->
                 <span v-if="isGradeBased(course.recommendations)" class="learning-readiness">
                   学习适配度: {{ Math.round(kp.masteryLevel) }}%
                 </span>
@@ -93,7 +91,6 @@
         <!-- 资源推荐 -->
         <div v-if="course.activeTab === 'resources'" class="recommendation-content">
           <div v-if="course.recommendations.resourceRecommendations && course.recommendations.resourceRecommendations.length" class="resource-recommendations">
-            <!-- 推荐方式说明 -->
             <div class="recommendation-mode-notice">
               <div v-if="isGradeBased(course.recommendations)" class="grade-based-notice">
                 <i class="info-icon">ℹ️</i>
@@ -166,7 +163,6 @@
               </div>
             </div>
 
-            <!-- 推荐方式说明 -->
             <div class="recommendation-mode-explanation">
               <h5>推荐说明</h5>
               <div class="explanation-content">
@@ -760,12 +756,18 @@ export default {
 }
 
 .course-block {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: white;
+  border-radius: 10px; /* 圆角 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
   margin-bottom: 20px;
   padding: 15px;
-  border-radius: 6px;
   position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-block:hover {
+  transform: translateY(-5px);  /* 向上移动 */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* 增加阴影 */
 }
 
 .course-block h3 {
@@ -780,7 +782,6 @@ export default {
   margin-bottom: 6px;
 }
 
-/* 图表样式 */
 .grade-trend-chart {
   height: 350px;
   margin: 15px 0;
@@ -788,22 +789,22 @@ export default {
 
 /* 推荐内容样式 */
 .refresh-btn {
-  background: #1890ff;
+  background: #4CAF50; /* 深绿色 */
   color: white;
   border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 16px;
+  border-radius: 8px; /* 更圆的按钮 */
   cursor: pointer;
-  font-size: 12px;
-  margin-left: 10px;
+  font-size: 14px;
+  transition: background-color 0.3s;
 }
 
 .refresh-btn:hover {
-  background: #40a9ff;
+  background: #45a049; /* 深色hover */
 }
 
 .refresh-btn:disabled {
-  background: #ccc;
+  background: #cccccc; /* 禁用时为灰色 */
   cursor: not-allowed;
 }
 
@@ -871,34 +872,6 @@ export default {
 
 .recommendation-content {
   padding: 15px;
-}
-
-/* 推荐方式说明样式 */
-.recommendation-mode-notice {
-  margin-bottom: 15px;
-  padding: 10px;
-  border-radius: 6px;
-  border-left: 4px solid #1890ff;
-}
-
-.grade-based-notice {
-  background: #e6f7ff;
-  color: #1890ff;
-}
-
-.knowledge-based-notice {
-  background: #f6ffed;
-  color: #52c41a;
-}
-
-.info-icon {
-  margin-right: 8px;
-}
-
-.knowledge-recommendations, .resource-recommendations {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
 }
 
 .knowledge-item, .resource-item {

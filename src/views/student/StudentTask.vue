@@ -1,9 +1,8 @@
-<!-- StudentTask.vue -->
 <template>
   <div class="student-task-wrapper">
     <h2>我的课程任务</h2>
 
-    <div v-for="course in enrolledCourses" :key="course.courseId" class="course-section">
+    <div v-for="course in enrolledCourses" :key="course.courseId" class="course-card">
       <div class="course-header">
         <h3>{{ course.name }} ({{ course.courseCode }})</h3>
         <p>学期: {{ course.semester }}</p>
@@ -52,32 +51,32 @@ export default {
   },
   methods: {
     viewTask(task) {
-  if (this.getTaskStatus(task) === '已截止') {
-    alert('任务已截止，无法查看')
-    return
-  }
-  this.$router.push({ name: 'TaskDetail', params: { id: task.taskId } })
-},
+      if (this.getTaskStatus(task) === '已截止') {
+        alert('任务已截止，无法查看');
+        return;
+      }
+      this.$router.push({ name: 'TaskDetail', params: { id: task.taskId } });
+    },
     async fetchEnrolledCoursesWithDetails() {
       try {
-        const coursesRes = await api.get('/student/courses')
-        const courses = coursesRes?.content || []
+        const coursesRes = await api.get('/student/courses');
+        const courses = coursesRes?.content || [];
         this.enrolledCourses = await Promise.all(
           courses.map(async course => {
             try {
               const tasksRes = await api.get(`/student/courses/${course.courseId}/tasks`, {
                 params: { page: 1, size: 100 }
-              })
-              return { ...course, tasks: tasksRes.data || [] }
+              });
+              return { ...course, tasks: tasksRes.data || [] };
             } catch (error) {
-              console.error(`加载任务失败:`, error)
-              return { ...course, tasks: [] }
+              console.error(`加载任务失败:`, error);
+              return { ...course, tasks: [] };
             }
           })
-        )
+        );
       } catch (err) {
-        console.error('加载课程失败:', err)
-        alert( '加载课程数据失败')
+        console.error('加载课程失败:', err);
+        alert('加载课程数据失败');
       }
     },
     formatTaskType(type) {
@@ -86,47 +85,47 @@ export default {
         'VIDEO_WATCHING': '视频观看',
         'MATERIAL_READING': '阅读材料',
         'PPT_VIEW': 'PPT浏览',
-        'EXAM_QUIZ': '试卷答题'
-      }
-      return typeMap[type] || type
+        'EXAM_QUIZ': '试卷答题',
+        'REPORT_SUBMISSION': '报告上传'
+      };
+      return typeMap[type] || type;
     },
     formatDate(dateStr) {
-      if (!dateStr) return '无截止时间'
+      if (!dateStr) return '无截止时间';
       return new Date(dateStr).toLocaleString('zh-CN', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit'
-      })
+      });
     },
     getTaskStatus(task) {
-      if (!task.deadline) return '进行中'
-      return new Date() > new Date(task.deadline) ? '已截止' : '进行中'
+      if (!task.deadline) return '进行中';
+      return new Date() > new Date(task.deadline) ? '已截止' : '进行中';
     },
     getTaskStatusClass(task) {
       return {
         'status-ongoing': this.getTaskStatus(task) === '进行中',
         'status-expired': this.getTaskStatus(task) === '已截止'
-      }
+      };
     }
   },
   mounted() {
-    this.fetchEnrolledCoursesWithDetails()
+    this.fetchEnrolledCoursesWithDetails();
   }
 }
-
-
 </script>
 
 <style scoped>
 .student-task-wrapper {
-  padding: 20px;
+  padding: 30px;
   max-width: 1200px;
   margin: 0 auto;
+  background-color: white;
 }
 
 .course-section {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 10px; /* 增加圆角 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
   padding: 20px;
   margin-bottom: 30px;
 }
@@ -137,20 +136,16 @@ export default {
   margin-bottom: 15px;
 }
 
-.resource-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+h2 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 30px;
 }
 
-.resource-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+h4 {
+  font-size: 22px;
+  color: #3498db;
+  margin-bottom: 20px;
 }
 
 .task-table {
@@ -158,7 +153,8 @@ export default {
   border-collapse: collapse;
 }
 
-.task-table th, .task-table td {
+.task-table th,
+.task-table td {
   padding: 12px;
   border: 1px solid #eee;
   text-align: left;
@@ -178,20 +174,9 @@ export default {
   color: #888;
 }
 
-.resource-size {
-  font-size: 0.8em;
-  color: #666;
-  margin-left: 8px;
-}
-
-.resource-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .btn {
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 16px;
+  border-radius: 8px; /* 增加圆角 */
   cursor: pointer;
   font-size: 14px;
   transition: all 0.3s;
@@ -213,24 +198,31 @@ export default {
   background: rgba(74, 144, 226, 0.1);
 }
 
+.course-header p {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Add hover effect for course card */
+.course-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px; /* 圆角 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  width: 100%;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);  /* Move the card up */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);  /* Add shadow */
+}
+
 @media (max-width: 768px) {
-  .resource-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .resource-actions {
-    flex-direction: column;
-  }
-  
   .task-table {
     display: block;
     overflow-x: auto;
   }
 }
-.resource-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
 </style>

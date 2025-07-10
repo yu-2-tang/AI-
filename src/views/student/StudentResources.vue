@@ -1,4 +1,3 @@
-<!-- StudentResources.vue -->
 <template>
   <div class="student-resources">
     <h2>我的学习资源</h2>
@@ -65,7 +64,6 @@ export default {
       }
     },
 
-    // 与ResourceManagement.vue完全一致的查看方法
     viewResource(resource) {
       // 在控制台输出详细的资源调试信息
       console.group('👁️ 查看资源 - 调试信息');
@@ -215,7 +213,6 @@ export default {
           // 根据资源类型添加合适的扩展名
           if (!fileName.includes('.')) {
             let extension = 'pdf' // 默认扩展名
-            
             switch (resource.type?.toUpperCase()) {
               case 'VIDEO':
                 extension = 'mp4'
@@ -321,14 +318,12 @@ export default {
       return (bytes / 1048576).toFixed(1) + ' MB';
     },
     
-    // 新增：获取文件扩展名的辅助方法
     getFileExtension(fileName) {
       if (!fileName) return '';
       const lastDot = fileName.lastIndexOf('.');
       return lastDot !== -1 ? fileName.slice(lastDot + 1).toLowerCase() : '';
     },
-    
-    // 新增：获取MIME类型信息的辅助方法
+
     getMimeTypeInfo(type) {
       const info = {
         originalType: type,
@@ -337,7 +332,7 @@ export default {
         category: 'unknown',
         expectedBackendMapping: 'unknown'
       };
-      
+
       if (type) {
         const lowerType = type.toLowerCase();
         
@@ -410,8 +405,13 @@ export default {
   justify-content: space-between;
   min-height: 260px; /* ⬅️ 增加卡片高度 */
   box-sizing: border-box;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
+.resource-card:hover {
+  transform: translateY(-10px);  /* 卡片上浮 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* 增加阴影 */
+}
 
 .resource-actions {
   margin-top: auto;
@@ -429,15 +429,15 @@ export default {
   display: inline-block;
   margin-top: 10px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .primary-btn:hover {
   background: #357abd;
 }
+
 .empty {
   color: #888;
   font-style: italic;
 }
-
-
 </style>

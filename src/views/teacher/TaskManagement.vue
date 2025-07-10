@@ -28,14 +28,11 @@
                 <td class="operation-cell">
                   <div class="btn-group">
                     <button class="outline-btn" @click="viewTask(task.taskId)">查看</button>
-                    
-                    <!-- 占位按钮：当 EXAM_QUIZ 时显示禁用按钮，确保对齐 -->
                     <button 
                       v-if="task.type !== 'EXAM_QUIZ'" 
                       class="outline-btn" 
                       @click="downloadTask(task.taskId)"
                     >下载</button>
-                    
                     <button 
                       v-else 
                       class="outline-btn disabled-btn"
@@ -76,35 +73,31 @@
                         <td>{{ submission.studentId }}</td>
                         <td>{{ mapTaskTypeToChinese(task.type) }}</td>
                         <td>{{ submission.submitTime }}</td>
-                        
-  <td>
-  <div class="btn-group">
-    <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
-    <template v-if="task.type !== 'EXAM_QUIZ'">
-      <button class="outline-btn small-btn" @click="viewSubmission(submission)">查看</button>
-      <button class="outline-btn small-btn" @click="downloadSubmission(submission)">下载</button>
-    </template>
+                        <td>
+                          <div class="btn-group">
+                            <!-- 非 EXAM_QUIZ 类型显示查看和下载按钮 -->
+                            <template v-if="task.type !== 'EXAM_QUIZ'">
+                              <button class="outline-btn small-btn" @click="viewSubmission(submission)">查看</button>
+                              <button class="outline-btn small-btn" @click="downloadSubmission(submission)">下载</button>
+                            </template>
 
-    <button 
-      v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
-      :class="['small-btn', submission.fullyGraded ? 'disabled-btn' : 'primary-btn']"
-      :disabled="submission.fullyGraded"
-      @click="!submission.fullyGraded && handleGrading(task, submission)"
-    >
-      {{ submission.fullyGraded ? '已批改' : '批改' }}
-    </button>
+                            <button 
+                              v-if="['CHAPTER_HOMEWORK', 'REPORT_SUBMISSION', 'EXAM_QUIZ'].includes(task.type)"
+                              :class="['small-btn', submission.fullyGraded ? 'disabled-btn' : 'primary-btn']"
+                              :disabled="submission.fullyGraded"
+                              @click="!submission.fullyGraded && handleGrading(task, submission)"
+                            >
+                              {{ submission.fullyGraded ? '已批改' : '批改' }}
+                            </button>
 
-    <!-- ✅ 状态也作为一个按钮组中的小块显示 -->
-    <span
-      v-if="getGradingStatus(task, submission).show"
-      class="grading-status"
-    >
-      {{ getGradingStatus(task, submission).text }}
-    </span>
-  </div>
-</td>
-
-
+                            <span
+                              v-if="getGradingStatus(task, submission).show"
+                              class="grading-status"
+                            >
+                              {{ getGradingStatus(task, submission).text }}
+                            </span>
+                          </div>
+                        </td>
                       </tr>
                       <tr v-if="!task.submissions || !task.submissions.length">
                         <td colspan="4" style="text-align: center; color: gray;">暂无提交记录</td>
@@ -811,124 +804,116 @@ mapTaskTypeToChinese(type) {
 </script>
 
 <style scoped>
+
+.teacher-tasks {
+  padding: 30px;
+  background-color: white;
+}
+
+h2 {
+  text-align: left;
+  font-size: 26px;
+  color: #333;
+  margin-bottom: 30px;
+}
+
 .add-task {
   background: #4a90e2;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 6px 12px;
+  padding: 10px 20px;
   cursor: pointer;
-}
-/* 蓝色边框按钮 */
-.outline-btn {
-  background: transparent;
-  border: 1px solid #3498db;
-  color: #3498db;
-  padding: 6px 0;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
-  text-align: center;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* 批改状态样式 - 字体小、颜色根据状态决定、与按钮同一行 */
-.grading-status {
-  font-size: 12px;
-  color: green;
-  margin-left: 8px;
-  align-self: center;
-  white-space: nowrap;
-}
-
-/* 所有嵌套表格按钮统一尺寸 */
-.small-btn {
-  width: 70px;
-  min-width: 70px;
-  max-width: 70px;
-  padding: 6px 0;
-  text-align: center;
-  font-size: 14px;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 嵌套表格按钮容器间距 */
-.task-table.nested .btn-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* 蓝色填充按钮 */
-.primary-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 6px 0;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 80x;
-  min-width: 80px;
-  max-width: 80px;
-  text-align: center;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 红色填充按钮 */
-.danger-btn {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 6px 0;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
-  text-align: center;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
-.teacher-tasks {
-  padding: 20px;
-}
-
-.course-card {
-  background: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 }
 
+.add-task:hover {
+  background: #357abd;
+}
 
+.course-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%; 
+  margin-bottom: 20px;
+  transition: transform 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);
+}
 
 .task-table {
-  width: 100%;
+  width: 100%; 
   border-collapse: collapse;
 }
 
 .task-table th,
 .task-table td {
-  border: 1px solid #eee;
-  padding: 8px;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #ddd;
 }
 
+.task-table th {
+  background-color: #f4f6f9;
+  text-align: center;
+}
+
+.operation-cell {
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+.outline-btn,
+.primary-btn,
+.danger-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  border: none;
+}
+
+.outline-btn {
+  border: 1px solid #3498db;
+  background: transparent;
+  color: #3498db;
+}
+
+.primary-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.danger-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.outline-btn:hover,
+.primary-btn:hover,
+.danger-btn:hover {
+  opacity: 0.8;
+}
+
+.small-btn {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.disabled-btn {
+  background-color: #f0f0f0;
+  color: #ccc;
+  cursor: not-allowed;
+}
 
 .modal {
   position: fixed;
@@ -953,7 +938,6 @@ mapTaskTypeToChinese(type) {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
 }
 
 .form-group {
@@ -961,8 +945,6 @@ mapTaskTypeToChinese(type) {
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 5px;
   font-weight: bold;
 }
 
@@ -988,28 +970,64 @@ mapTaskTypeToChinese(type) {
 .task-table.nested td {
   border-color: #ddd;
 }
-
-/* 按钮整体布局，按钮组左右分开 */
-.operation-cell {
-  display: flex;
-  justify-content: space-between;
+/* Modify the small-btn and disabled-btn button styles to align text properly */
+.small-btn, .disabled-btn {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 6px 12px; /* Ensure all buttons have consistent padding */
+  font-size: 14px;
+  height: 36px; /* Set the same height for all buttons to align them */
+  text-align: center;
 }
 
-/* 每组按钮内横向排列并保持间距 */
-.btn-group {
-  display: flex;
-  gap: 10px;
-}
-/* 禁用占位按钮 */
+/* Adjust the alignment for the disabled button (批改完成) */
 .disabled-btn {
-  background: #f0f0f0;
-  border: 1px solid #ddd;
+  background-color: #f0f0f0;
   color: #ccc;
   cursor: not-allowed;
+  line-height: 36px; /* Vertically align the text */
 }
 
-/* 所有按钮统一宽度、垂直居中 */
+/* Same for small buttons */
+.outline-btn.small-btn, .primary-btn.small-btn {
+  line-height: 36px;
+}
 
+.grading-status {
+  line-height: 36px; /* Align text of grading status */
+  margin-left: 8px; /* Add some space to the left */
+}
+/* 为所有按钮设置统一的高度和内边距 */
+.outline-btn, .primary-btn, .danger-btn, .small-btn, .disabled-btn {
+  padding: 8px 16px;  /* 设置统一的内边距 */
+  font-size: 14px;  /* 统一字体大小 */
+  height: 36px;  /* 统一设置高度 */
+  display: inline-flex;
+  align-items: center;  /* 确保文字在按钮内垂直居中 */
+  justify-content: center;  /* 文字水平居中 */
+  text-align: center;
+}
+
+/* 设置禁用按钮样式 */
+.disabled-btn {
+  background-color: #f0f0f0;
+  color: #ccc;
+  cursor: not-allowed;
+  line-height: 36px; /* 确保禁用按钮的文本垂直居中 */
+}
+
+/* 调整已批改（灰色）按钮，确保与其他按钮相同 */
+.outline-btn.disabled-btn, .disabled-btn {
+  background-color: #f0f0f0;  /* 灰色背景 */
+  color: #ccc;  /* 灰色文字 */
+  cursor: not-allowed;  /* 禁止点击 */
+  line-height: 36px;  /* 保证文本垂直居中 */
+}
+
+/* 对其他按钮类型进行对齐处理 */
+.outline-btn:hover, .primary-btn:hover, .danger-btn:hover, .small-btn:hover {
+  opacity: 0.8;
+}
 
 </style>

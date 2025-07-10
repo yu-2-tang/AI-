@@ -7,20 +7,19 @@
     <div class="course-list">
       <div class="course-card" v-for="course in paginatedCourses" :key="course.courseId">
         <h3>{{ course.name }}</h3>
-        <p>课程代码: {{ course.courseCode }}</p>
-        <p>学期: {{ course.semester }}</p>
-        <p v-if="course.credit !== undefined">学分: {{ course.credit }}</p>
-        <p v-if="course.hours !== undefined">学时: {{ course.hours }}</p>
+        <p class="course-code">课程代码: {{ course.courseCode }}</p>
+        <p class="semester">学期: {{ course.semester }}</p>
+        <p v-if="course.credit !== undefined" class="credit">学分: {{ course.credit }}</p>
+        <p v-if="course.hours !== undefined" class="hours">学时: {{ course.hours }}</p>
         <div class="course-actions">
           <button class="danger-btn" @click="deleteCourse(course.courseId)">删除课程</button>
           <button class="warning-btn" @click="editCourse(course)">编辑课程</button>
           <button class="primary-btn">
-  <router-link
-    :to="{ name: 'CourseDetail', params: { id: course.courseId } }"
-    style="color: white; text-decoration: none;"
-  >课程详情</router-link>
-</button>
-
+            <router-link
+              :to="{ name: 'CourseDetail', params: { id: course.courseId } }"
+              style="color: white; text-decoration: none;"
+            >课程详情</router-link>
+          </button>
           <button class="info-btn" @click="goToResourceManagement(course.courseId)">资源管理</button>
           <button class="info-btn" @click="goToKnowledgePointManagement(course.courseId)">知识点管理</button>
         </div>
@@ -29,12 +28,12 @@
 
     <!-- 分页控制 -->
     <div class="pagination">
-      <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+      <button @click="prevPage" :disabled="page === 1" class="page">上一页</button>
       <span>第 {{ page }} / {{ totalPages }} 页</span>
-      <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
+      <button @click="nextPage" :disabled="page >= totalPages" class="page">下一页</button>
     </div>
 
-   <!-- 添加课程弹窗 -->
+    <!-- 添加课程弹窗 -->
     <div v-if="showAddForm" class="modal-overlay">
       <div class="modal">
         <h3>添加新课程</h3>
@@ -59,7 +58,7 @@
 
         <div class="modal-actions">
           <button class="add-btn" @click="createCourse">保存</button>
-          <button class="danger-btn" @click="showAddForm = false">取消</button>
+          <button class="danger-btn cancel-btn" @click="showAddForm = false">取消</button> <!-- 修改了此按钮的样式 -->
         </div>
       </div>
     </div>
@@ -136,14 +135,13 @@ export default {
         alert(err.response?.data?.message || '加载课程失败')
       }
     },
-     // 创建新课程
     async createCourse() {
       try {
         await axios.post('/teacher/courses', this.newCourse)
         alert('课程添加成功')
         this.showAddForm = false
         this.resetForm()
-        this.fetchCourses()  // 刷新课程列表
+        this.fetchCourses()
       } catch (err) {
         console.error('添加课程失败', err)
         alert(err.response?.data?.message || '添加失败')
@@ -160,19 +158,16 @@ export default {
         alert(err.response?.data?.message || '删除失败')
       }
     },
-     // 编辑课程按钮
     editCourse(course) {
-      // 打开编辑课程的弹窗并加载课程信息
       this.editCourseData = { ...course }
       this.showEditForm = true
     },
-    // 更新课程
     async updateCourse() {
       try {
         await axios.put(`/teacher/courses/${this.editCourseData.courseId}`, this.editCourseData)
         alert('课程更新成功')
         this.showEditForm = false
-        this.fetchCourses()  // 刷新课程列表
+        this.fetchCourses()
       } catch (err) {
         console.error('更新课程失败', err)
         alert(err.response?.data?.message || '更新失败')
@@ -204,119 +199,240 @@ export default {
 
 <style scoped>
 .teacher-courses {
-  padding: 20px;
+  padding: 30px;
+  background-color: white;
 }
+
+h2 {
+  text-align: left;
+  font-size: 26px;
+  color: #333;
+  margin-bottom: 30px;
+}
+
 .add-btn {
   background: #4a90e2;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 6px 12px;
+  padding: 10px 20px;
   cursor: pointer;
+  margin-bottom: 20px;
 }
+
+.add-btn:hover {
+  background: #357abd;
+}
+
 .course-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 30px;
+  justify-content: flex-start;
 }
+
 .course-card {
-  background: #fff;
-  padding: 15px;
+  background: #ffffff;
+  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   width: 300px;
+  transition: transform 0.3s ease;
 }
+
+.course-card:hover {
+  transform: translateY(-5px);
+}
+
+h3 {
+  font-size: 18px;
+  color: #3498db;
+  margin-bottom: 10px;
+}
+
+.course-code, .semester, .credit, .hours {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
 .course-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
 }
+
+.danger-btn, .primary-btn, .info-btn, .warning-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+
 .danger-btn {
   background: #e74c3c;
   color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
 }
+
+.danger-btn:hover {
+  background: #c0392b;
+}
+
 .primary-btn {
   background: #3498db;
   color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  text-decoration: none;
-  cursor: pointer;
-  display: inline-block;
 }
+
+.primary-btn:hover {
+  background: #2980b9;
+}
+
 .info-btn {
   background: #1abc9c;
   color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
 }
+
+.info-btn:hover {
+  background: #16a085;
+}
+
 .warning-btn {
   background: #f39c12;
   color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
-/* modal 样式 */
+.warning-btn:hover {
+  background: #e67e22;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .modal {
   background: #fff;
-  padding: 20px;
+  padding: 30px;
   width: 400px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
-.modal input,
-.modal textarea {
+
+.modal input, .modal textarea {
   width: 100%;
-  max-width: 300px;  /* ✅ 控制最大宽度 */
   margin-bottom: 15px;
-  padding: 8px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-button {
-  background: #4a90e2;
-  color: white;
-  border: none;
+  padding: 10px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
 }
+
 .modal label {
   font-weight: bold;
-  margin-top: 8px;
-  display: block;
 }
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
+
+.modal-actions button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-btn:hover {
+  background-color: #2980b9;
+}
+
+.pagination-btn:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
+}
+
+/* 修改取消按钮的样式使其与保存按钮大小一致 */
+.cancel-btn {
+  border-radius: 4px;
+  padding: 10px 20px;
+
+  margin-bottom: 20px;
+  
+}
+.page {
+  padding: 8px 16px;
+  border-radius: 8px; /* 增加圆角 */
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+   background: transparent;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
+}
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.page {
+  padding: 8px 16px;
+  border-radius: 8px; /* Increase border radius */
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+  background: transparent;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
+}
+
+
+.pagination-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-btn:hover {
+  background-color: #2980b9;
+}
+
+.pagination-btn:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
 }
 
 </style>

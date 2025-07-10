@@ -4,7 +4,7 @@
 
     <!-- 搜索栏 -->
     <div class="search-bar">
-      <input v-model="keyword" placeholder="按课程名称或编号搜索" />
+      <input v-model="keyword" placeholder="按课程名称或编号搜索" class="search-input" />
       <button class="btn primary" @click="fetchAllCourses">搜索课程</button>
     </div>
 
@@ -13,18 +13,18 @@
     <div class="course-grid">
       <div v-for="course in allCourses" :key="course.courseId" class="course-card">
         <h4>{{ course.name }}</h4>
-        <p>编号: {{ course.courseCode }}</p>
-        <p>学期: {{ course.semester }}</p>
-        <p>学分: {{ course.credit }}，学时: {{ course.hours }}</p>
+        <p class="course-info">编号: {{ course.courseCode }}</p>
+        <p class="course-info">学期: {{ course.semester }}</p>
+        <p class="course-info">学分: {{ course.credit }}，学时: {{ course.hours }}</p>
         <button class="btn primary" @click="enrollCourse(course.courseId)">选课</button>
       </div>
     </div>
 
     <!-- 分页控制 -->
     <div class="pagination">
-      <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+      <button @click="prevPage" :disabled="page === 1" class="page">上一页</button>
       <span>第 {{ page }} / {{ totalPages }} 页</span>
-      <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
+      <button @click="nextPage" :disabled="page >= totalPages" class="page">下一页</button>
     </div>
 
     <!-- 我已选课程 -->
@@ -32,9 +32,9 @@
     <div class="course-grid">
       <div v-for="course in myCourses" :key="course.courseId" class="course-card enrolled">
         <h4>{{ course.name }}</h4>
-        <p>编号: {{ course.courseCode }}</p>
-        <p>学期: {{ course.semester }}</p>
-        <p>学分: {{ course.credit }}，学时: {{ course.hours }}</p>
+        <p class="course-info">编号: {{ course.courseCode }}</p>
+        <p class="course-info">学期: {{ course.semester }}</p>
+        <p class="course-info">学分: {{ course.credit }}，学时: {{ course.hours }}</p>
         <div class="button-group">
           <button class="btn danger" @click="dropCourse(course.courseId)">退课</button>
           <button class="btn primary" @click="goToCourseDetail(course.courseId)">课程详情</button>
@@ -138,62 +138,132 @@ export default {
 </script>
 
 <style scoped>
-.student-course-wrapper {
-  padding: 20px;
+.page {
+  padding: 8px 16px;
+  border-radius: 8px; /* 增加圆角 */
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+   background: transparent;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
 }
+
+.student-course-wrapper {
+  padding: 30px;
+  background-color: white;
+}
+
+h2 {
+  text-align: left;
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+h3 {
+  font-size: 22px;
+  color: #3498db;
+  margin-bottom: 20px;
+}
+
 .search-bar {
   margin-bottom: 20px;
   display: flex;
   gap: 10px;
 }
+
+.search-input {
+  padding: 8px 16px;
+  font-size: 16px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  width: 100%;
+  max-width: 400px;
+}
+
 .course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 30px;
 }
+
 .course-card {
   background: #fff;
   border: 1px solid #ddd;
-  padding: 16px;
+  padding: 20px;
   border-radius: 8px;
+  transition: transform 0.3s ease;
 }
+
+.course-card:hover {
+  transform: translateY(-5px);
+}
+
 .course-card.enrolled {
   border-left: 4px solid #4a90e2;
 }
+
+.course-info {
+  font-size: 14px;
+  color: #666;
+}
+
 .button-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
 }
+
 .btn {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 4px;
   border: none;
   cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
+
 .btn.primary {
   background: #4a90e2;
   color: white;
 }
+
 .btn.danger {
   background: #e74c3c;
   color: white;
 }
+
+.btn:hover {
+  background: #357abd;
+  transform: translateY(-2px);
+}
+
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  margin-bottom: 40px;
-}
-button {
-  background: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
+  margin-top: 20px;
 }
 
+.pagination-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-btn:hover {
+  background-color: #2980b9;
+}
+
+.pagination-btn:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
+}
 </style>

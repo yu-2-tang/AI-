@@ -9,8 +9,8 @@
         class="course-card"
       >
         <h3>{{ course.name }}</h3>
-        <p>课程代码：{{ course.courseCode }}</p>
-        <p>学期：{{ course.semester }}</p>
+        <p class="course-code">课程代码：{{ course.courseCode }}</p>
+        <p class="semester">学期：{{ course.semester }}</p>
 
         <div class="action-bar">
           <input
@@ -26,11 +26,11 @@
       </div>
     </div>
 
-   <!-- 分页控制 -->
+    <!-- 分页控制 -->
     <div class="pagination">
-      <button @click="prevPage" :disabled="page === 1" class="pagination-btn">上一页</button>
+      <button @click="prevPage" :disabled="page === 1" class="page">上一页</button>
       <span>第 {{ page }} / {{ totalPages }} 页</span>
-      <button @click="nextPage" :disabled="page >= totalPages" class="pagination-btn">下一页</button>
+      <button @click="nextPage" :disabled="page >= totalPages" class="page">下一页</button>
     </div>
   </div>
 </template>
@@ -115,28 +115,55 @@ export default {
 
 <style scoped>
 .student-mgmt {
-  padding: 20px;
+  padding: 30px;
+  background-color: white;
+}
+
+h2 {
+  text-align: left;
+  font-size: 26px;
+  color: #333;
+  margin-bottom: 30px;
 }
 
 .course-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 30px;
+  justify-content: flex-start;
 }
 
 .course-card {
-  width: 300px;
-  padding: 15px;
+  background: #ffffff;
+  padding: 20px;
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  transition: transform 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);
+}
+
+h3 {
+  font-size: 18px;
+  color: #3498db;
+  margin-bottom: 10px;
+}
+
+.course-code,
+.semester {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 10px;
 }
 
 .action-bar {
-  margin-top: 10px;
+  margin-top: 15px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
+  justify-content: space-between;
 }
 
 button {
@@ -144,18 +171,53 @@ button {
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 6px 12px;
+  padding: 8px 16px;
   cursor: pointer;
+ 
 }
 
 button:hover {
-  opacity: 0.9;
+  background: #357abd;
+  transform: translateY(-2px);
 }
+
+button:disabled {
+ 
+  cursor: not-allowed;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 20px;
+  margin-top: 30px;
 }
+
+
+
+.pagination-btn:hover {
+  background-color: #2980b9;
+}
+
+.pagination-btn:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
+}
+.page {
+  padding: 8px 16px;
+  border-radius: 8px; /* Keep the rounded corners */
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s; 
+  background: transparent;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
+}
+
+.page:hover {
+  background: transparent;  /* Remove the hover background change */
+  transform: none;  /* Remove the hover transform effect */
+}
+
 </style>
