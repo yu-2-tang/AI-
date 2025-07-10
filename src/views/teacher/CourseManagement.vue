@@ -88,7 +88,7 @@
 
         <div class="modal-actions">
           <button class="add-btn" @click="updateCourse">保存</button>
-          <button class="danger-btn" @click="showEditForm = false">取消</button>
+          <button class="danger-btn cancel-btn" @click="showEditForm = false">取消</button>
         </div>
       </div>
     </div>

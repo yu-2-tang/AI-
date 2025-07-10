@@ -144,8 +144,11 @@
           <textarea v-model="editTask.description"></textarea>
         </div>
         <div class="modal-actions">
-          <button @click="saveEditedTask">保存修改</button>
-          <button @click="editModalVisible = false">取消</button>
+          <div class="modal-actions">
+  <button class="add-btn" @click="saveEditedTask">保存</button>
+  <button class="danger-btn" @click="editModalVisible = false">取消</button>
+</div>
+
         </div>
       </div>
     </div>
@@ -1028,6 +1031,55 @@ h2 {
 /* 对其他按钮类型进行对齐处理 */
 .outline-btn:hover, .primary-btn:hover, .danger-btn:hover, .small-btn:hover {
   opacity: 0.8;
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+ 
+  text-align: center;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.modal-actions button:hover {
+  opacity: 0.8;
+}
+
+/* Save Button - Blue */
+.modal-actions .add-btn {
+  background-color: #3498db; /* Blue */
+  color: white;
+  border: none;
+}
+
+.modal-actions .add-btn:hover {
+  background-color: #2980b9;
+}
+
+/* Cancel Button - Red */
+.modal-actions .danger-btn {
+  background-color: #e74c3c; /* Red */
+  color: white;
+  border: none;
+}
+
+.modal-actions .danger-btn:hover {
+  background-color: #c0392b;
 }
 
 </style>

@@ -632,7 +632,13 @@ export default {
   background: #f9f9f9;
 }
 
-/* 与ResourceManagement.vue一致的按钮样式 */
+/* Update the font size and height for the course name and graph title */
+.course-info h2, .graph-container h3 {
+  font-size: 24px; /* Same font size for both */
+  margin-bottom: 20px; /* Consistent spacing */
+  height: 30px; /* Ensure both titles are of the same height */
+}
+
 .btn {
   padding: 6px 12px;
   border-radius: 4px;
@@ -672,4 +678,5 @@ export default {
 .danger-btn:hover {
   background: #c0392b;
 }
+
 </style>
