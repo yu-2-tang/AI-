@@ -4,7 +4,7 @@
 <div class="decor-lower-right"></div>
 
 
-    <h2>我的课程与任务成绩</h2>
+    <h2>任务成绩</h2>
 
     <div v-for="course in courseList" :key="course.courseId" class="course-block">
       <h3>{{ course.name }}（{{ course.courseCode }}）</h3>
