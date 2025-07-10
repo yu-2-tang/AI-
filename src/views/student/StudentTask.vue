@@ -1,5 +1,8 @@
 <template>
   <div class="student-task-wrapper">
+    <div class="decor-lower-left"></div>
+    <div class="decor-lower-right"></div>
+
     <h2>我的课程任务</h2>
 
     <div v-for="course in enrolledCourses" :key="course.courseId" class="course-card">
@@ -225,4 +228,99 @@ h4 {
     overflow-x: auto;
   }
 }
+.student-task-wrapper {
+  position: relative;
+  z-index: 1;
+  padding: 30px;
+  background-color: white;
+  overflow: hidden;
+}
+
+/* 左上角圆形装饰 */
+.student-task-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  left: -80px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle at center, rgba(170, 205, 245, 0.25), rgba(74, 144, 226, 0.4));
+  border-radius: 50%;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+/* 右上角斜切装饰 */
+.student-task-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(74, 144, 226, 0.4));
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+  z-index: 0;
+}
+
+/* 顶部右边圆点 */
+.decor-circle-small {
+  position: absolute;
+  top: 30px;
+  right: 60px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(74, 144, 226, 0.25);
+  z-index: 0;
+}
+/* 左下角圆弧 */
+.student-task-wrapper::part-lower-left {
+  content: "";
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle at center, rgba(170, 205, 245, 0.25), rgba(74, 144, 226, 0.4));
+  border-radius: 50%;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+/* 右下角斜切图形 */
+.student-task-wrapper::part-lower-right {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(74, 144, 226, 0.4));
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+  z-index: 0;
+}
+.decor-lower-left {
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle at center, rgba(170, 205, 245, 0.25), rgba(74, 144, 226, 0.4));
+  border-radius: 50%;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+.decor-lower-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(74, 144, 226, 0.4));
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+  z-index: 0;
+}
+
 </style>

@@ -588,16 +588,24 @@ export default {
 
 .course-detail {
   display: flex;
-  gap: 40px;
+  column-gap: 0px; /* 改得更小点贴近 */
   margin-bottom: 40px;
+  align-items: flex-start;
 }
 
+
 .course-info {
-  flex: 1;
+  flex: 0 0 55%; /* 左侧占55%宽度 */
 }
 
 .graph-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 1000px;
+  width: 100%;
+  margin-left: -100; /* 原来是 40px，现在设为 0，让它贴近课程信息 */
 }
 
 .graph-box {
@@ -607,6 +615,13 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+.course-info h2, .graph-container h3 {
+  font-size: 24px; /* 保持一致字体大小 */
+  margin-bottom: 20px;
+  height: 30px;
+}
+
 
 .resource-section {
   background: #fff;
@@ -678,5 +693,26 @@ export default {
 .danger-btn:hover {
   background: #c0392b;
 }
+.course-detail {
+  display: flex;
+  column-gap: 10px; /* 可以设 0-10px */
+  margin-bottom: 40px;
+  align-items: flex-start;
+}
+
+.course-info {
+  flex: 0 0 30%; /* 原来是55%，改成50%或更少让右侧能靠近 */
+}
+
+.graph-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 800px;  /* 限制图谱最大宽度 */
+  width: 100%;
+  margin-left: 0;  /* 删掉错误写法，或设为0 */
+}
+
 
 </style>
