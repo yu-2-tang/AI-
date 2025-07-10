@@ -47,10 +47,11 @@
               </span>
             </td>
             <td>
-              <button class="btn outline-btn" @click="viewKnowledgePoint(point)">查看</button>
-              <button class="btn outline-btn" @click="editKnowledgePoint(point)">编辑</button>
-              <button class="btn danger-btn" @click="deleteKnowledgePoint(point)">删除</button>
-            </td>
+  <button @click="viewKnowledgePoint(point)">查看</button>
+  <button class="btn warning-btn" @click="editKnowledgePoint(point)">编辑</button>
+  <button class="btn danger-btn" @click="deleteKnowledgePoint(point)">删除</button>
+</td>
+
           </tr>
         </tbody>
       </table>
@@ -297,17 +298,32 @@ export default {
   color: white;
 }
 
+/* 所有按钮的基础样式 */
 .btn {
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
-  margin-right: 5px;
+  margin-right: 10px;  /* 按钮之间的空隙 */
   border: none;
+}
+
+.btn:last-child {
+  margin-right: 0; /* 最后一个按钮（删除按钮）不需要右边的空隙 */
 }
 
 .btn:hover {
   opacity: 0.9;
 }
+
+/* 可以根据需要调整具体按钮之间的间距 */
+td button:nth-child(1) {
+  margin-right: 10px; /* "查看"和"编辑"之间的空隙 */
+}
+
+td button:nth-child(2) {
+  margin-right: 10px; /* "编辑"和"删除"之间的空隙 */
+}
+
 
 .back-btn {
   background: #4a90e2;
@@ -466,7 +482,14 @@ tbody tr:hover {
   margin-bottom: 15px;
   line-height: 1.5;
 }
-
+button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 .modal p strong {
   color: #333;
 }
