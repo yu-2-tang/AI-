@@ -192,7 +192,7 @@ export default {
         // 更详细的批改状态判断
         objectiveGraded: sub.objectiveGraded || false, // 客观题是否已批改
         subjectiveGraded: sub.subjectiveGraded || false, // 主观题是否已批改
-        fullyGraded: sub.status === 'graded' && typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
+        fullyGraded: sub.status === 'GRADED' && typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
       }));
 
       this.$set(task, 'submissions', submissions);
@@ -362,7 +362,7 @@ mapTaskTypeToChinese(type) {
             // 更详细的批改状态判断
             objectiveGraded: sub.objectiveGraded || false, // 客观题是否已批改
             subjectiveGraded: sub.subjectiveGraded || false, // 主观题是否已批改
-            fullyGraded: typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
+            fullyGraded: sub.status === 'GRADED' && typeof sub.finalGrade === 'number' && !isNaN(sub.finalGrade)
           }));
         } catch (e) {
           console.warn(`获取任务 ${task.taskId} 的提交失败：`, e);

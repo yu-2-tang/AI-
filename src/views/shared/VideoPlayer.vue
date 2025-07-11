@@ -24,7 +24,7 @@
     <!-- 3D热力图显示区域 -->
     <div class="heatmap-section" v-if="loaded && !error">
       <div class="heatmap-header">
-        <h3>🏔️ 观看热力图（3D山峰视图）</h3>
+        <h3>🏔️ 观看热力图</h3>
         <div class="heatmap-controls">
           <button 
             v-if="threejsLoaded"
