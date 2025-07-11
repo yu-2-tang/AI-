@@ -62,7 +62,7 @@ export default {
         const res = await axios.get('/teacher/courses')
         this.courses = res.data || []
       } catch (err) {
-        console.error('获取课程失败', err)
+        // 获取课程失败
       }
     },
     async fetchReport() {
@@ -71,40 +71,56 @@ export default {
         const res = await axios.get(`/reports/course/${this.selectedCourseId}`)
         this.report = res || { performers: [] }
       } catch (err) {
-        console.error('获取成绩报告失败', err)
         this.report = null
       }
     },
-    async exportReport() {
-  if (!this.selectedCourseId) return;
+   async exportReport() {
+      if (!this.selectedCourseId) return;
 
-  try {
+    try {
     const res = await axios.get(`/reports/export/${this.selectedCourseId}`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      timeout: 30000,
+      headers: {
+        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      }
     });
 
-    // 确保是 Blob 类型
-    const blob = new Blob([res.data], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
+    // 现在res应该是完整的response对象，包含data和headers
+    const blob = res.data;
+    const headers = res.headers;
 
-    // 🚨 这里用 blob.size 检查，而不是 res.data.size
-    if (blob.size === 0) {
-      alert('导出的文件为空');
-      return;
+        if (!blob || blob.size === 0) {
+          alert('导出的文件为空，请检查是否有数据');
+          return;
+        }
+
+        // 创建下载链接
+        const url = window.URL.createObjectURL(blob);
+        
+        // 从响应头中获取文件名
+        let filename = '成绩报表.xlsx';
+        const contentDisposition = headers['content-disposition'];
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename\*?=([^;]+)/);
+          if (filenameMatch) {
+            filename = decodeURIComponent(filenameMatch[1].replace(/^UTF-8''/, ''));
+          }
+        }
+
+        // 触发下载
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+      } catch (err) {
+        alert('导出失败: ' + (err.message || '未知错误'));
+      }
     }
-
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '成绩报表.xlsx';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error('导出失败:', err);
-    alert('导出失败');
-  }
-}
 
 
   }

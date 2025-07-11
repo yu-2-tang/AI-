@@ -17,32 +17,23 @@ api.interceptors.request.use(config => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('API Request:', config.method?.toUpperCase(), config.url, config.data || config.params || '');
   return config;
 }, error => {
-  console.error('Request interceptor error:', error);
   return Promise.reject(error);
 });
 
-// 响应拦截器
+// 响应拦截器 - 修复版本
 api.interceptors.response.use(
   response => {
-    console.log('API Response:', response.config.url, response.status);
-    console.log('Response Data:', response.data);
-    
-    // 检查响应数据结构
-    if (response.data && typeof response.data === 'object') {
-      console.log('Response Data Type:', typeof response.data);
-      console.log('Response Data Keys:', Object.keys(response.data));
+    // 如果是blob响应，返回完整的response对象
+    if (response.config.responseType === 'blob') {
+      return response; // 返回完整response对象，保留data、headers等
     }
     
-    return response.data;
+    return response.data; // 普通响应只返回data
   },
   error => {
-    console.error('API Error:', error.config?.url, error.response?.status, error.response?.data || error.message);
-    
     if (error.response?.status === 401) {  // 401 Unauthorized
-      console.warn('用户未认证，跳转到登录页面');
       localStorage.removeItem('token');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
